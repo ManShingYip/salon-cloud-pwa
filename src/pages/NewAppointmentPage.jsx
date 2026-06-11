@@ -56,7 +56,7 @@ const NewAppointmentPage = () => {
     const load = async () => {
       const [{ data: tData }, { data: sData }, { data: schData }] = await Promise.all([
         supabase.from('treatments').select('*').eq('is_active', true),
-        supabase.from('profiles').select('*'),
+        supabase.from('staff').select('*'),
         supabase.from('staff_schedules').select('*'),
       ]);
       setTreatments(tData || []);
