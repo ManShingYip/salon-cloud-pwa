@@ -75,15 +75,15 @@ salon-pwa/
 
 ### 技術規則
 
-| 規則 | 說明 |
-|------|------|
-| **CSS** | 只用 Tailwind utility classes，不寫自訂 CSS |
+| 規則             | 說明                                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CSS**    | 只用 Tailwind utility classes，不寫自訂 CSS                                                                                                                                 |
 | **元件庫** | 優先使用 Flowbite React 元件（Modal、Button、Spinner、Alert 等）。**⚠️ 表格必須用原生 `<table>`，禁止用 Flowbite `<Table>`**（Safari 上有 shadow div 遮蔽 bug） |
-| **圖標** | 使用 Heroicons（`@heroicons/react`） |
-| **路由** | React Router v6 |
-| **狀態** | React useState / useContext（不用 Redux） |
-| **API** | 透過 `src/config/supabase.js` 的 Supabase client 呼叫 |
-| **響應式** | 以 iPad 橫向 (1024×768) 為首要目標，但也需在直向 (768×1024) 正常顯示 |
+| **圖標**   | 使用 Heroicons（`@heroicons/react`）                                                                                                                                      |
+| **路由**   | React Router v6                                                                                                                                                             |
+| **狀態**   | React useState / useContext（不用 Redux）                                                                                                                                   |
+| **API**    | 透過 `src/config/supabase.js` 的 Supabase client 呼叫                                                                                                                     |
+| **響應式** | 以 iPad 橫向 (1024×768) 為首要目標，但也需在直向 (768×1024) 正常顯示                                                                                                      |
 
 ### 現有套件（已在 package.json）
 
@@ -157,16 +157,16 @@ colors: {
 
 ### 元件樣式規則
 
-| 元件 | Tailwind 寫法 |
-|------|--------------|
-| **Primary Button** | `bg-primary text-white rounded-xl px-6 py-3 text-base font-medium min-h-[48px] min-w-[44px] shadow-sm active:scale-95 transition-transform` |
-| **Secondary Button** | `border-2 border-primary text-primary rounded-xl px-6 py-3 text-base font-medium min-h-[48px] bg-transparent` |
-| **Danger Button** | `bg-danger text-white rounded-xl px-6 py-3 text-base font-medium min-h-[48px]` |
-| **Input** | `bg-surface border border-gray-200 rounded-xl px-4 py-3 text-base min-h-[48px] focus:border-primary focus:ring-2 focus:ring-primary-light outline-none` |
-| **Card** | `bg-surface rounded-2xl p-5 shadow-[0_2px_12px_rgba(61,44,51,0.06)]` |
-| **Tag** | `inline-flex rounded-lg px-3 py-1 text-xs font-medium` |
-| **Modal** | 使用 Flowbite `<Modal>`，半透明遮罩 + 內容置中 + 按鈕固定在底部 |
-| **表格** | **⚠️ 必須用原生 `<table>`**，禁止 Flowbite `<Table>`（Safari shadow div bug） |
+| 元件                       | Tailwind 寫法                                                                                                                                             |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Primary Button**   | `bg-primary text-white rounded-xl px-6 py-3 text-base font-medium min-h-[48px] min-w-[44px] shadow-sm active:scale-95 transition-transform`             |
+| **Secondary Button** | `border-2 border-primary text-primary rounded-xl px-6 py-3 text-base font-medium min-h-[48px] bg-transparent`                                           |
+| **Danger Button**    | `bg-danger text-white rounded-xl px-6 py-3 text-base font-medium min-h-[48px]`                                                                          |
+| **Input**            | `bg-surface border border-gray-200 rounded-xl px-4 py-3 text-base min-h-[48px] focus:border-primary focus:ring-2 focus:ring-primary-light outline-none` |
+| **Card**             | `bg-surface rounded-2xl p-5 shadow-[0_2px_12px_rgba(61,44,51,0.06)]`                                                                                    |
+| **Tag**              | `inline-flex rounded-lg px-3 py-1 text-xs font-medium`                                                                                                  |
+| **Modal**            | 使用 Flowbite `<Modal>`，半透明遮罩 + 內容置中 + 按鈕固定在底部                                                                                         |
+| **表格**             | **⚠️ 必須用原生 `<table>`**，禁止 Flowbite `<Table>`（Safari shadow div bug）                                                                 |
 
 ---
 
@@ -214,17 +214,17 @@ body {
 - 預設 Layout 為 `AppLayout`（Sidebar + 內容區）
 - 路由表：
 
-| 路徑 | 頁面元件 | 誰可見 |
-|------|---------|--------|
-| `/` | `DailyAppointmentsPage` | 所有人 |
-| `/appointments/new` | `NewAppointmentPage` | 所有人 |
+| 路徑                  | 頁面元件                   | 誰可見 |
+| --------------------- | -------------------------- | ------ |
+| `/`                 | `DailyAppointmentsPage`  | 所有人 |
+| `/appointments/new` | `NewAppointmentPage`     | 所有人 |
 | `/appointments/:id` | 預約詳情（可先導向 modal） | 所有人 |
-| `/clients` | 客戶搜尋列表 | 所有人 |
-| `/clients/:id` | `ClientDetailPage` | 所有人 |
-| `/settlement` | `DailySettlementPage` | 所有人 |
-| `/treatments` | `TreatmentManagePage` | 店長 |
-| `/logs` | `ActivityLogPage` | 店長 |
-| `/dormant` | `DormantClientsPage` | 店長 |
+| `/clients`          | 客戶搜尋列表               | 所有人 |
+| `/clients/:id`      | `ClientDetailPage`       | 所有人 |
+| `/settlement`       | `DailySettlementPage`    | 所有人 |
+| `/treatments`       | `TreatmentManagePage`    | 店長   |
+| `/logs`             | `ActivityLogPage`        | 店長   |
+| `/dormant`          | `DormantClientsPage`     | 店長   |
 
 - 用一個簡單的 `AuthContext` 提供 `user` 物件（含 `role`），目前先用 mock：
   ```js
@@ -260,6 +260,7 @@ body {
 ### 檔案 5：`src/components/ui/Modal.jsx`
 
 包裝 Flowbite `<Modal>`，統一風格：
+
 - `show` / `onClose` / `title` / `children` / `footer` props
 - 背景半透明遮罩
 - 內容區可滾動
@@ -280,6 +281,7 @@ body {
 **A. 今日預約總覽**
 
 佈局（iPad 橫向 1024×768）：
+
 ```
 ┌──────────────┬──────────────────────────────────────┐
 │  頂部搜尋欄  │  🔍 搜尋客戶（電話/姓名）...         │
@@ -305,6 +307,7 @@ body {
 ```
 
 功能：
+
 - 載入當日預約（從 Supabase `appointments` 表）
 - 點擊日曆切換日期
 - 點擊預約卡片可查看詳情
@@ -364,6 +367,7 @@ body {
   ```
 
 功能：
+
 - 收款金額**自由輸入**，唔跟單價 auto-calc
 - 付款方式下拉（現金/信用卡/轉賬/其他）
 - 可選消耗療程次數（預設 1）
@@ -378,15 +382,16 @@ body {
 **D. 收入紀錄（訂單記錄模式 — v2 雙框架）**
 
 佈局：
+
 ```
 💰 收入紀錄
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 [篩選列] 日期範圍: [____] ~ [____]  狀態: [全部 ▾]  客戶搜尋: [________]  收款方式: [全部 ▾]
 
-┌── 🟡 緩存中 ──────────┐  ┌── 🟢 確定收入 ──────────┐
-│  3 筆 · HK$8,500 待收  │  │  12 筆 · HK$38,500 已收   │
-│  未收足 / 未做完服務    │  │  已收足 + 已做完服務      │
-└────────────────────────┘  └──────────────────────────┘
+┌── 🟡 緩存中 ──────────────┐    ┌── 🟢 確定收入 ──────────┐
+│3 筆 · HK$8,500分期付款待收  │   │  12 筆 · HK$38,500 已收   │
+│   療程患有次數對方可能退款   │  │  已收足 + 已做完服務    │
+└────────────────────────────┘   └──────────────────────────┘
 
 📋 訂單記錄 (一單一記錄)
 客戶    │ 療程     │ 已收/總額       │ 進度     │ 收款方式 │ 日期   │ 狀態
@@ -402,6 +407,7 @@ ghgfg   │ 背部按摩 │ $0/$1,200      │ ░░░░   0%│ -       │
 ```
 
 功能（v2）：
+
 - **篩選列**：日期範圍 + 狀態下拉（全部/緩存中/確定收入/已退款）+ 客戶搜尋 + 收款方式
 - **🟡 緩存框架**：任何 remaining > 0 OR SUM(已收) < total_price 嘅訂單，顯示筆數+待收金額
 - **🟢 確定收入框架**：已完成 + 已收足嘅交易，顯示筆數+已收金額
@@ -420,6 +426,7 @@ ghgfg   │ 背部按摩 │ $0/$1,200      │ ░░░░   0%│ -       │
 **E. 客戶詳情與療程庫存**
 
 佈局（v2 — 收錢模式）：
+
 ```
 ┌──────────────────────────────────────────────┐
 │  ← 返回客戶列表          [編輯客戶資料]      │
@@ -449,6 +456,7 @@ ghgfg   │ 背部按摩 │ $0/$1,200      │ ░░░░   0%│ -       │
 ```
 
 功能（v2）：
+
 - 左側：客戶資訊（含特殊敏感 ⚠️ 提示）
 - 右側：已購療程訂單列表，每項顯示總額/已收/剩餘次數/到期日
 - 🟡 緩存中（未收足錢 OR 未做完服務）vs 🟢 已完成
@@ -460,27 +468,27 @@ ghgfg   │ 背部按摩 │ $0/$1,200      │ ░░░░   0%│ -       │
 
 ### 檔案 12-16：輔助頁面
 
-| 檔案 | 說明 |
-|------|------|
-| `src/pages/TreatmentManagePage.jsx` | 療程庫管理（店長）：列表 + 新增/編輯療程 |
-| `src/pages/ActivityLogPage.jsx` | 活動日誌（店長）：只讀表格，可按日期/類型篩選 |
-| `src/pages/DormantClientsPage.jsx` | 沉睡客列表（店長）：90 天無預約的客戶，可一鍵發送提醒 |
-| `src/components/clients/ClientSearch.jsx` | 客戶搜尋元件：搜尋欄 + 結果列表（顯示電話後四碼 + 會員編號） |
-| `src/components/appointments/ConflictChecker.jsx` | 三維防撞檢查元件：顯示所選時段的美容師/房間/儀器可用狀態 |
+| 檔案                                                | 說明                                                         |
+| --------------------------------------------------- | ------------------------------------------------------------ |
+| `src/pages/TreatmentManagePage.jsx`               | 療程庫管理（店長）：列表 + 新增/編輯療程                     |
+| `src/pages/ActivityLogPage.jsx`                   | 活動日誌（店長）：只讀表格，可按日期/類型篩選                |
+| `src/pages/DormantClientsPage.jsx`                | 沉睡客列表（店長）：90 天無預約的客戶，可一鍵發送提醒        |
+| `src/components/clients/ClientSearch.jsx`         | 客戶搜尋元件：搜尋欄 + 結果列表（顯示電話後四碼 + 會員編號） |
+| `src/components/appointments/ConflictChecker.jsx` | 三維防撞檢查元件：顯示所選時段的美容師/房間/儀器可用狀態     |
 
 ---
 
 ## 🔧 通用規則（所有檔案必須遵守）
 
 1. **import 路徑**：統一使用 `@/` 別名指向 `src/`（Vite alias 已設好）
+
    ```js
    import Button from '@/components/ui/Button'
    import { supabase } from '@/config/supabase'
    ```
-
 2. **所有文字必須是繁體中文**（介面文字、placeholder、錯誤訊息等）
-
 3. **資料取得模式**：
+
    ```js
    // 用 useEffect + useState 載入資料
    const [data, setData] = useState([])
@@ -491,21 +499,18 @@ ghgfg   │ 背部按摩 │ $0/$1,200      │ ░░░░   0%│ -       │
      })
    }, [])
    ```
-
 4. **觸控優化**：
+
    - 所有可點擊元素 `min-h-[48px] min-w-[44px]`
    - 列表項目之間有足夠間距（`gap-3` 以上）
    - 不使用 `hover:` 改用 `active:`
-
 5. **Flowbite 使用**：優先使用 Flowbite React 元件而非自造輪子
+
    ```js
    import { Table, Badge, Spinner, Datepicker, TextInput, Textarea, Select } from 'flowbite-react'
    ```
-
 6. **PWA 離線**：不需處理（Service Worker 已另外設定）
-
 7. **貨幣格式**：使用港幣 `HK$` 前綴，`HK$12,800`
-
 8. **日期格式**：使用 `yyyy-MM-dd` 或 `MM月dd日 (週X)`
 
 ---
@@ -515,6 +520,7 @@ ghgfg   │ 背部按摩 │ $0/$1,200      │ ░░░░   0%│ -       │
 請為每個檔案單獨輸出，標示清楚檔案路徑（例如 `// File: src/pages/DailyAppointmentsPage.jsx`），讓我能直接複製貼上到對應路徑。
 
 每個檔案開頭請加一行註解說明用途，例如：
+
 ```jsx
 /**
  * 今日預約總覽頁面 - iPad 橫向為主
