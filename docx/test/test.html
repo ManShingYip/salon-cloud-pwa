@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>收入紀錄排版草圖 V5</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', sans-serif; background-color: #FEFAF6; color: #3D2C33; }
+    /* 自訂隱藏原生 date picker 箭頭，令外觀更似系統組件 */
+    input[type="date"]::-webkit-inner-spin-button, input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
+  </style>
+</head>
+<body class="h-screen w-full flex overflow-hidden">
+
+  <aside class="w-[220px] bg-white border-r border-gray-200 hidden md:flex flex-col p-4 opacity-40 shrink-0">
+    <div class="h-8 bg-gray-200 rounded w-3/4 mb-8"></div>
+    <div class="space-y-4 flex-1">
+      <div class="h-10 bg-[#C88EA7] rounded w-full text-white flex items-center px-4 text-sm font-bold shadow-sm">💰 收入紀錄</div>
+      <div class="h-10 bg-gray-100 rounded w-full"></div>
+    </div>
+  </aside>
+
+  <main class="flex-1 flex flex-col min-h-0 p-6 space-y-4">
+    
+    <header class="shrink-0 flex justify-between items-center bg-white p-3 rounded-2xl border border-gray-200 shadow-sm">
+      <div class="flex items-center gap-6 pl-2">
+        <h1 class="text-xl font-bold text-[#3D2C33] flex items-center gap-2">
+          💰 收入紀錄
+        </h1>
+        <div class="w-px h-6 bg-gray-200"></div>
+        
+        <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-[#C88EA7] transition-colors cursor-pointer">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-gray-500"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
+          <input type="date" class="bg-transparent border-none text-sm font-bold text-gray-700 outline-none p-0 cursor-pointer" value="2026-06-01">
+          <span class="text-gray-400 font-bold mx-1">至</span>
+          <input type="date" class="bg-transparent border-none text-sm font-bold text-gray-700 outline-none p-0 cursor-pointer" value="2026-06-30">
+        </div>
+      </div>
+
+      <div class="flex gap-2">
+        <button class="px-4 py-2 bg-white text-gray-700 border border-gray-300 text-sm font-bold rounded-lg shadow-sm hover:bg-gray-50 transition-colors">匯出</button>
+        <button class="px-4 py-2 bg-[#D4736A] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#b55c54] transition-colors">新增退款</button>
+        <button class="px-4 py-2 bg-[#6B9B7D] text-white text-sm font-bold rounded-lg shadow-sm hover:bg-[#588267] transition-colors">手動入帳 / 增次</button>
+      </div>
+    </header>
+
+    <section class="grid grid-cols-3 gap-4 shrink-0">
+      
+      <div class="bg-amber-50 border-2 border-amber-400 rounded-xl p-4 shadow-md flex flex-col justify-between cursor-pointer relative transform transition-transform hover:-translate-y-1">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
+            <span class="font-bold text-amber-900 text-base">緩存中 (需跟進)</span>
+          </div>
+        </div>
+        <div class="text-2xl font-black text-amber-800 mb-2">
+          5 筆 · <span class="text-lg">待收 $3,500</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-bold text-amber-700/80 border-t border-amber-200/60 pt-2">
+          <span>欠款未清: $3,500</span>
+          <span class="text-amber-300">|</span>
+          <span>套票殘值: $5,000</span>
+        </div>
+      </div>
+
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between cursor-pointer opacity-70 hover:opacity-100 hover:border-emerald-300 transition-all">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            <span class="font-bold text-gray-700 text-base">確定收入 (已落袋)</span>
+          </div>
+        </div>
+        <div class="text-2xl font-black text-emerald-700 mb-2">
+          12 筆 · <span class="text-lg">實收 $38,500</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-bold text-gray-500 border-t border-gray-100 pt-2">
+          <span>本月完成: 4 筆</span>
+          <span class="text-gray-300">|</span>
+          <span>過往累積: 8 筆</span>
+        </div>
+      </div>
+
+      <div class="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col justify-between cursor-pointer opacity-70 hover:opacity-100 hover:border-red-300 transition-all">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-[#D4736A]"></span>
+            <span class="font-bold text-gray-700 text-base">退款紀錄 (異常)</span>
+          </div>
+        </div>
+        <div class="text-2xl font-black text-[#D4736A] mb-2">
+          1 筆 · <span class="text-lg">流失 -$800</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs font-bold text-gray-500 border-t border-gray-100 pt-2">
+          <span>客訴退回: 1 筆</span>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="flex-1 min-h-0 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
+      
+      <div class="bg-gray-50 border-b border-gray-200 p-2 shrink-0 flex items-center justify-between">
+        <div class="flex items-center gap-3 px-2">
+          <span class="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-amber-400"></span> 正在顯示：緩存中名單
+          </span>
+        </div>
+        <div class="flex items-center gap-2 text-sm">
+          <select class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs bg-white focus:outline-none focus:border-[#C88EA7]">
+            <option>經手員工: 全部 ▾</option>
+            <option>店長</option>
+            <option>Amy</option>
+          </select>
+          <input type="text" placeholder="🔍 搜尋客戶/電話..." class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs w-48 bg-white focus:outline-none focus:border-[#C88EA7]">
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+          <thead class="bg-white sticky top-0 z-0 text-gray-500 border-b border-gray-200 shadow-sm">
+            <tr>
+              <th class="px-4 py-3 font-bold">客戶</th>
+              <th class="px-4 py-3 font-bold">療程</th>
+              <th class="px-4 py-3 font-bold">已收 / 總額</th>
+              <th class="px-4 py-3 font-bold w-48">次數核銷進度</th>
+              <th class="px-4 py-3 font-bold">最後異動日</th>
+              <th class="px-4 py-3 font-bold">經手人</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100 text-gray-800">
+            <tr class="hover:bg-amber-50 cursor-pointer transition-colors">
+              <td class="px-4 py-4 font-bold">陳小明</td>
+              <td class="px-4 py-4">激光脫毛 (10次)</td>
+              <td class="px-4 py-4 font-mono">
+                <span class="font-bold text-emerald-600">$1,500</span><span class="text-gray-400">/$5,000</span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-24 bg-gray-200 rounded-sm h-3 overflow-hidden flex">
+                    <div class="h-full bg-amber-400 w-[30%]"></div>
+                  </div>
+                  <span class="text-xs font-bold text-gray-500 w-8">30%</span>
+                </div>
+              </td>
+              <td class="px-4 py-4 text-gray-600">
+                <span class="font-bold">6/10</span> <span class="text-xs text-gray-400">(收尾數)</span>
+              </td>
+              <td class="px-4 py-4 text-gray-500">Amy</td>
+            </tr>
+            <tr class="hover:bg-amber-50 cursor-pointer transition-colors">
+              <td class="px-4 py-4 font-bold">ghgfg</td>
+              <td class="px-4 py-4">背部按摩 (5次)</td>
+              <td class="px-4 py-4 font-mono">
+                <span class="font-bold text-emerald-600">$0</span><span class="text-gray-400">/$1,200</span>
+              </td>
+              <td class="px-4 py-4">
+                <div class="flex items-center gap-2">
+                  <div class="w-24 bg-gray-200 rounded-sm h-3 overflow-hidden flex">
+                    <div class="h-full bg-amber-400 w-[0%]"></div>
+                  </div>
+                  <span class="text-xs font-bold text-gray-500 w-8">0%</span>
+                </div>
+              </td>
+              <td class="px-4 py-4 text-gray-600">
+                <span class="font-bold">5/28</span> <span class="text-xs text-gray-400">(首次開單)</span>
+              </td>
+              <td class="px-4 py-4 text-gray-500">店長</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
