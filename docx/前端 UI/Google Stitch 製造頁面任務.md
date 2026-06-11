@@ -78,7 +78,7 @@ salon-pwa/
 | 規則 | 說明 |
 |------|------|
 | **CSS** | 只用 Tailwind utility classes，不寫自訂 CSS |
-| **元件庫** | 優先使用 Flowbite React 元件（Modal、Button、Table、Datepicker 等） |
+| **元件庫** | 優先使用 Flowbite React 元件（Modal、Button、Spinner、Alert 等）。**⚠️ 表格必須用原生 `<table>`，禁止用 Flowbite `<Table>`**（Safari 上有 shadow div 遮蔽 bug） |
 | **圖標** | 使用 Heroicons（`@heroicons/react`） |
 | **路由** | React Router v6 |
 | **狀態** | React useState / useContext（不用 Redux） |
@@ -166,7 +166,7 @@ colors: {
 | **Card** | `bg-surface rounded-2xl p-5 shadow-[0_2px_12px_rgba(61,44,51,0.06)]` |
 | **Tag** | `inline-flex rounded-lg px-3 py-1 text-xs font-medium` |
 | **Modal** | 使用 Flowbite `<Modal>`，半透明遮罩 + 內容置中 + 按鈕固定在底部 |
-| **表格** | 使用 Flowbite `<Table>`，行高至少 48px（方便點擊） |
+| **表格** | **⚠️ 必須用原生 `<table>`**，禁止 Flowbite `<Table>`（Safari shadow div bug） |
 
 ---
 
@@ -369,7 +369,7 @@ body {
 - 可選消耗療程次數（預設 1）
 - Appointment 模式：列出該客戶所有可用療程，可多選
 - Manual 模式：單一療程 + 自由輸入金額 + 次數
-- 確認後：扣減 client_services 次數 + 寫入 payment_transactions 記錄
+- 確認後：消耗 client_services 次數 + 寫入 payment_transactions 記錄
 
 ---
 
