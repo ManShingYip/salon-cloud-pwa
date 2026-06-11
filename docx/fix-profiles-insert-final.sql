@@ -1,14 +1,18 @@
--- 最終方案：唔用 staff 表，改 profiles
--- profiles.id FK to auth.users 所以唔可以隨便 insert
--- BUT 可以用 trigger 繞過：自動 create auth user when insert profile
+-- FK 可能未 drop（有唔同名），試 drop 所有 profiles FK
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT conname FROM pg_constraint
+    WHERE conrelid = 'profiles'::regclass AND contype = 'f'
+  LOOP
+    EXECUTE format('ALTER TABLE profiles DROP CONSTRAINT IF EXISTS %I', r.conname);
+  END LOOP;
+END $$;
 
--- Step 1: Make profiles.id use gen_random_uuid() instead of FK to auth.users
-ALTER TABLE profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
-
--- Step 2: Add default UUID generation
 ALTER TABLE profiles ALTER COLUMN id SET DEFAULT uuid_generate_v4();
 
--- Step 3: Fix profiles RLS
 DROP POLICY IF EXISTS "profiles_select_own_or_admin" ON profiles;
 DROP POLICY IF EXISTS "profiles_select_all" ON profiles;
 DROP POLICY IF EXISTS "profiles_insert_admin" ON profiles;
