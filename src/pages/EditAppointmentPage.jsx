@@ -18,15 +18,13 @@ const EditAppointmentPage = () => {
 
   const [formData, setFormData] = useState({
     staff_id: '',
-    room_id: '',
-    equipment_id: '',
+    room_name: '',
+    equipment_name: '',
     appointment_date: '',
     start_time: '',
   });
   const [conflicts, setConflicts] = useState({ staff: false, room: false, equip: false });
   const [staff, setStaff] = useState([]);
-  const [rooms, setRooms] = useState([]);
-  const [equipment, setEquipment] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -36,23 +34,19 @@ const EditAppointmentPage = () => {
     const { data: appt } = await supabase.from('appointments').select('*, treatments(name), clients(name)').eq('id', id).single();
     if (!appt) { setError('找不到預約'); setLoading(false); return; }
 
-    const [{ data: sData }, { data: rData }, { data: eData }] = await Promise.all([
+    const [{ data: sData }] = await Promise.all([
       supabase.from('profiles').select('*'),
-      supabase.from('rooms').select('*').eq('is_active', true),
-      supabase.from('equipment').select('*').eq('is_active', true),
     ]);
 
     setAppointment(appt);
     setFormData({
       staff_id: appt.staff_id,
-      room_id: appt.room_id,
-      equipment_id: appt.equipment_id || '',
+      room_name: appt.room_name || appt.room_id || '',
+      equipment_name: appt.equipment_name || appt.equipment_id || '',
       appointment_date: appt.appointment_date,
       start_time: appt.start_time,
     });
     setStaff(sData || []);
-    setRooms(rData || []);
-    setEquipment(eData || []);
     setLoading(false);
   };
 
@@ -66,7 +60,7 @@ const EditAppointmentPage = () => {
 
     const { data: conflicting } = await supabase
       .from('appointments')
-      .select('staff_id, room_id, equipment_id')
+      .select('staff_id, room_name, equipment_name')
       .eq('appointment_date', formData.appointment_date)
       .neq('status', 'cancelled')
       .neq('id', id)
@@ -76,8 +70,8 @@ const EditAppointmentPage = () => {
     if (conflicting) {
       setConflicts({
         staff: conflicting.some(c => c.staff_id === formData.staff_id),
-        room: conflicting.some(c => c.room_id === formData.room_id),
-        equip: formData.equipment_id ? conflicting.some(c => c.equipment_id === formData.equipment_id) : false,
+        room: formData.room_name ? conflicting.some(c => c.room_name === formData.room_name) : false,
+        equip: formData.equipment_name ? conflicting.some(c => c.equipment_name === formData.equipment_name) : false,
       });
     }
   };
@@ -93,8 +87,8 @@ const EditAppointmentPage = () => {
 
     const { error: saveErr } = await supabase.from('appointments').update({
       staff_id: formData.staff_id,
-      room_id: formData.room_id,
-      equipment_id: formData.equipment_id || null,
+      room_name: formData.room_name,
+      equipment_name: formData.equipment_name || null,
       appointment_date: formData.appointment_date,
       start_time: formData.start_time,
       end_time: endTime,
@@ -156,17 +150,22 @@ const EditAppointmentPage = () => {
               </div>
               <div>
                 <Label>房間</Label>
-                <Select value={formData.room_id} onChange={(e) => { setFormData({...formData, room_id: e.target.value}); checkConflicts(); }}>
-                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </Select>
+                <input type="text"
+                  className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface focus:ring-primary focus:border-primary"
+                  placeholder="輸入房間名稱..."
+                  value={formData.room_name}
+                  onChange={(e) => { setFormData({...formData, room_name: e.target.value}); checkConflicts(); }}
+                />
                 {conflicts.room && <p className="text-xs text-danger mt-1">⚠️ 該房間此時段已被佔用</p>}
               </div>
               <div>
                 <Label>儀器 (可選)</Label>
-                <Select value={formData.equipment_id} onChange={(e) => { setFormData({...formData, equipment_id: e.target.value}); checkConflicts(); }}>
-                  <option value="">不選儀器</option>
-                  {equipment.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                </Select>
+                <input type="text"
+                  className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface focus:ring-primary focus:border-primary"
+                  placeholder="輸入儀器名稱（可留空）..."
+                  value={formData.equipment_name}
+                  onChange={(e) => { setFormData({...formData, equipment_name: e.target.value}); checkConflicts(); }}
+                />
                 {conflicts.equip && <p className="text-xs text-danger mt-1">⚠️ 該儀器此時段已被佔用</p>}
               </div>
             </div>
