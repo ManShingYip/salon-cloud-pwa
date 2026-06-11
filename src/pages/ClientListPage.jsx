@@ -107,11 +107,13 @@ const ClientListPage = () => {
                   className="cursor-pointer min-h-[56px] active:bg-gray-50"
                   onClick={() => navigate(`/clients/${c.id}`)}
                 >
-                  <Table.Cell className="font-bold flex items-center gap-2">
-                    {c.name}
-                    {c.is_sensitive && (
-                      <ExclamationTriangleIcon className="w-5 h-5 text-danger inline" title="特殊敏感客戶" />
-                    )}
+                  <Table.Cell className="font-bold">
+                    <span className="flex items-center gap-2">
+                      {c.name}
+                      {c.is_sensitive && (
+                        <ExclamationTriangleIcon className="w-5 h-5 text-danger inline" title="特殊敏感客戶" />
+                      )}
+                    </span>
                   </Table.Cell>
                   <Table.Cell className="text-text-muted font-mono">
                     ****{c.phone?.slice(-4) || '----'}
