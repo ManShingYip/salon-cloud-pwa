@@ -25,7 +25,7 @@ const AppLayout = ({ user }) => {
     { name: '今日預約', path: '/appointments', icon: CalendarDaysIcon },
     { name: '客戶管理', path: '/clients', icon: UsersIcon },
     { name: '療程管理', path: '/treatments', icon: SparklesIcon },
-    { name: '收入紀錄', path: '/settlement', icon: BanknotesIcon },
+    { name: '訂單管理', path: '/settlement', icon: BanknotesIcon },
     { name: '員工排班', path: '/schedules', icon: ClockIcon },
     { name: '活動日誌', path: '/logs', icon: ClipboardDocumentListIcon },
     { name: '沉睡客戶', path: '/dormant', icon: MoonIcon },
