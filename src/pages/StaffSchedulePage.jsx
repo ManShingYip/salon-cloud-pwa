@@ -71,7 +71,7 @@ const StaffSchedulePage = () => {
   if (loading) return <div className="flex justify-center p-20"><Spinner size="xl" /></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="flex-1 flex flex-col min-h-0 space-y-6">
       <header>
         <h1 className="text-2xl font-bold text-text">📅 員工排班設定</h1>
         <p className="text-text-muted text-sm mt-1">點擊方格即可編輯上班時間</p>

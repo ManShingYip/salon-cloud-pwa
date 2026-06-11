@@ -304,9 +304,14 @@ const DailyAppointmentsPage = () => {
         </section>
       </div>
 
-      {/* Payment Modal */}
+      {/* Payment Modal (Appointment 模式) */}
       {selectedAppointment && (
-        <PaymentModal show={showPayment} onClose={() => { setShowPayment(false); setSensitiveAlert(null); loadWeekAppointments(); }} appointment={selectedAppointment} />
+        <PaymentModal
+          mode="appointment"
+          show={showPayment}
+          onClose={() => { setShowPayment(false); setSensitiveAlert(null); loadWeekAppointments(); }}
+          appointment={selectedAppointment}
+        />
       )}
 
       {/* 退回 Modal */}
