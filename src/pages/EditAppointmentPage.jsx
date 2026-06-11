@@ -35,7 +35,7 @@ const EditAppointmentPage = () => {
     if (!appt) { setError('找不到預約'); setLoading(false); return; }
 
     const [{ data: sData }] = await Promise.all([
-      supabase.from('staff').select('*'),
+      supabase.from('profiles').select('*'),
     ]);
 
     setAppointment(appt);

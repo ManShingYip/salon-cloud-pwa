@@ -48,7 +48,7 @@ const OrderManagePage = () => {
   }, [filters.startDate, filters.endDate]);
 
   const fetchStaff = async () => {
-    const { data } = await supabase.from('staff').select('id, name');
+    const { data } = await supabase.from('profiles').select('id, name');
     setStaffList(data || []);
   };
 
@@ -60,12 +60,12 @@ const OrderManagePage = () => {
       supabase.from('client_services').select('*, clients(name), treatments(name)')
         .gte('purchase_date', filters.startDate)
         .lte('purchase_date', filters.endDate),
-      supabase.from('payment_transactions').select('*, staff!settled_by(name)')
+      supabase.from('payment_transactions').select('*, profiles!settled_by(name)')
         .gte('transaction_date', filters.startDate)
         .lte('transaction_date', filters.endDate)
         .not('remarks', 'ilike', '%VOID%'),
       // 🔧 Fix: refunds FK 路徑 — refunded_by → staff, client_service_id → client_services
-      supabase.from('refunds').select('*, staff!refunded_by(name), client_services(*, clients(name), treatments(name))')
+      supabase.from('refunds').select('*, profiles!refunded_by(name), client_services(*, clients(name), treatments(name))')
         .gte('refund_date', filters.startDate)
         .lte('refund_date', filters.endDate),
     ]);
@@ -81,7 +81,7 @@ const OrderManagePage = () => {
       const lastPaymentDate = relatedPayments.length > 0
         ? [...relatedPayments].sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date))[0].transaction_date
         : '-';
-      const staffName = relatedPayments[0]?.staff?.name || '—';
+      const staffName = relatedPayments[0]?.profiles?.name || '—';
 
       return {
         ...s,
@@ -102,7 +102,7 @@ const OrderManagePage = () => {
       amount: -(parseFloat(r.refund_amount) || 0),
       reason: r.reason || '',
       refund_date: r.refund_date,
-      staff_name: r.staff?.name || '—',
+      staff_name: r.profiles?.name || '—',
       status: 'refunded'
     }));
 

@@ -32,7 +32,7 @@ const StaffSchedulePage = () => {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: sData }, { data: schData }] = await Promise.all([
-      supabase.from('staff').select('*').order('name'),
+      supabase.from('profiles').select('*').order('name'),
       supabase.from('staff_schedules').select('*').order('day_of_week'),
     ]);
     setStaff(sData || []);

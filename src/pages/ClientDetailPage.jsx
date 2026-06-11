@@ -76,7 +76,7 @@ const ClientDetailPage = () => {
       ] = await Promise.all([
         supabase.from('clients').select('*').eq('id', id).maybeSingle(),
         supabase.from('client_services').select('*, treatments(name)').eq('client_id', id),
-        supabase.from('appointments').select('*, treatments(name), staff(name)').eq('client_id', id).order('appointment_date', { ascending: false }),
+        supabase.from('appointments').select('*, treatments(name), profiles(name)').eq('client_id', id).order('appointment_date', { ascending: false }),
       ]);
 
       if (!clientData) {
@@ -381,7 +381,7 @@ const ClientDetailPage = () => {
                       <tr key={item.id}>
                         <td className="px-6 py-4 font-bold">{item.appointment_date}</td>
                         <td className="px-6 py-4">{item.treatments?.name || '-'}</td>
-                        <td className="px-6 py-4">{item.staff?.name || '-'}</td>
+                        <td className="px-6 py-4">{item.profiles?.name || '-'}</td>
                         <td className="px-6 py-4">
                           <Tag color={item.status === 'attended' ? 'green' : item.status === 'cancelled' ? 'gray' : 'amber'}>
                             {item.status === 'attended' ? '已出席' : item.status === 'cancelled' ? '已取消' : '未出席'}

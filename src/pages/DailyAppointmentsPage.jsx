@@ -87,7 +87,7 @@ const DailyAppointmentsPage = () => {
     const lastDay = dates[dates.length - 1];
     const { data } = await supabase
       .from('appointments')
-      .select(`*, clients(name, phone, member_id, is_sensitive, sensitive_note), treatments(name), staff!appointments_staff_id_fkey(name), rooms(name)`)
+      .select(`*, clients(name, phone, member_id, is_sensitive, sensitive_note), treatments(name), profiles!appointments_staff_id_fkey(name), rooms(name)`)
       .gte('appointment_date', firstDay)
       .lte('appointment_date', lastDay)
       .order('start_time', { ascending: true });
@@ -271,7 +271,7 @@ const DailyAppointmentsPage = () => {
                           </div>
                           {/* 員工 + 房間 */}
                           <div className="w-[140px] shrink-0 flex flex-col text-xs text-text-muted">
-                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{app.staff?.name}</span>
+                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{app.profiles?.name}</span>
                             <span className="flex items-center gap-1"><MapPinIcon className="w-3 h-3" />{app.rooms?.name}</span>
                           </div>
                           {/* 狀態 + 操作 */}

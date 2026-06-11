@@ -19,7 +19,7 @@ const ActivityLogPage = () => {
 
   const fetchLogs = async () => {
     setLoading(true);
-    let query = supabase.from('activity_log').select(`*, staff(name)`).order('created_at', { ascending: false }).limit(50);
+    let query = supabase.from('activity_log').select(`*, profiles(name)`).order('created_at', { ascending: false }).limit(50);
     if (filter.type) query = query.eq('action_type', filter.type);
     if (filter.query) query = query.or(`action_type.ilike.%${filter.query}%,target_type.ilike.%${filter.query}%`);
 
@@ -172,7 +172,7 @@ const ActivityLogPage = () => {
                     <td className="px-6 py-4">
                       <Tag color={getActionColor(log.action_type)}>{getActionLabel(log.action_type)}</Tag>
                     </td>
-                    <td className="px-6 py-4 font-bold">{log.staff?.name || '系統'}</td>
+                    <td className="px-6 py-4 font-bold">{log.profiles?.name || '系統'}</td>
                     <td className="px-6 py-4 text-sm text-text-muted font-mono whitespace-pre-wrap max-w-[400px] text-xs leading-relaxed">
                       {formatDetails(log.details)}
                     </td>

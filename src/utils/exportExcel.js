@@ -45,14 +45,14 @@ export const exportClients = async (supabase) => {
 export const exportSales = async (supabase) => {
   const { data } = await supabase
     .from('payment_transactions')
-    .select('*, clients(name), treatments(name), staff!payment_transactions_staff_id_fkey(name)')
+    .select('*, clients(name), treatments(name), profiles!payment_transactions_staff_id_fkey(name)')
     .order('transaction_date', { ascending: false })
     .limit(500);
   const rows = (data || []).map(tx => ({
     '日期': tx.transaction_date,
     '客戶': tx.clients?.name || '',
     '療程': tx.treatments?.name || '',
-    '美容師': tx.staff?.name || '',
+    '美容師': tx.profiles?.name || '',
     '金額': tx.amount,
     '支付方式': tx.payment_method === 'cash' ? '現金' : tx.payment_method === 'card' ? '信用卡' : tx.payment_method === 'transfer' ? '轉賬' : tx.payment_method === 'other' ? '其他' : tx.payment_method,
     '備註': tx.remarks || '',
