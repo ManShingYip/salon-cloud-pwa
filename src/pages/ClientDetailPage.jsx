@@ -391,7 +391,7 @@ const ClientDetailPage = () => {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">購買次數</label>
-              <TextInput type="number" min="1" value={purchaseForm.sessions} onChange={(e) => setPurchaseForm({...purchaseForm, sessions: e.target.value})} />
+              <TextInput type="number" min="1" value={purchaseForm.sessions} onChange={(e) => setPurchaseForm({...purchaseForm, sessions: parseInt(e.target.value) || 1})} />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">單價 (HKD)</label>
@@ -488,6 +488,7 @@ const ClientDetailPage = () => {
                 p_appointment_id: null,
                 p_service_ids: [manualDeductTarget.id],
                 p_payment_method: manualDeductForm.payment_method,
+                p_amount: parseFloat(manualDeductForm.sessions) * (manualDeductTarget.unit_price || 0) || null,
               });
               if (error) { setManualDeductError(error.message); }
               else { setShowManualDeduct(false); fetchData(); }

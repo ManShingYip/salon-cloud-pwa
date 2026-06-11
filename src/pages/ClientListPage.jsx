@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, TextInput, Spinner, Card, Badge } from 'flowbite-react';
+import { Table, TextInput, Spinner } from 'flowbite-react';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -12,7 +12,6 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
-import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import Tag from '@/components/ui/Tag';
 import Modal from '@/components/ui/Modal';

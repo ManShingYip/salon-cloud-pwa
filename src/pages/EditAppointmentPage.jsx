@@ -134,7 +134,7 @@ const EditAppointmentPage = () => {
             <div className="space-y-4">
               <div>
                 <Label>日期</Label>
-                <input type="date" className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface focus:ring-primary focus:border-primary" value={formData.appointment_date} onChange={(e) => setFormData({...formData, appointment_date: e.target.value})} />
+                <input type="date" className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface focus:ring-primary focus:border-primary" value={formData.appointment_date} onChange={(e) => { setFormData({...formData, appointment_date: e.target.value}); checkConflicts(); }} />
               </div>
               <div>
                 <Label>時間</Label>
@@ -149,31 +149,32 @@ const EditAppointmentPage = () => {
             <div className="space-y-4 border-l pl-6">
               <div>
                 <Label>美容師</Label>
-                <Select value={formData.staff_id} onChange={(e) => setFormData({...formData, staff_id: e.target.value})}>
+                <Select value={formData.staff_id} onChange={(e) => { setFormData({...formData, staff_id: e.target.value}); checkConflicts(); }}>
                   {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </Select>
                 {conflicts.staff && <p className="text-xs text-danger mt-1">⚠️ 該美容師此時段已有預約</p>}
               </div>
               <div>
                 <Label>房間</Label>
-                <Select value={formData.room_id} onChange={(e) => setFormData({...formData, room_id: e.target.value})}>
+                <Select value={formData.room_id} onChange={(e) => { setFormData({...formData, room_id: e.target.value}); checkConflicts(); }}>
                   {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </Select>
                 {conflicts.room && <p className="text-xs text-danger mt-1">⚠️ 該房間此時段已被佔用</p>}
               </div>
               <div>
                 <Label>儀器 (可選)</Label>
-                <Select value={formData.equipment_id} onChange={(e) => setFormData({...formData, equipment_id: e.target.value})}>
+                <Select value={formData.equipment_id} onChange={(e) => { setFormData({...formData, equipment_id: e.target.value}); checkConflicts(); }}>
                   <option value="">不選儀器</option>
                   {equipment.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </Select>
+                {conflicts.equip && <p className="text-xs text-danger mt-1">⚠️ 該儀器此時段已被佔用</p>}
               </div>
             </div>
           </div>
 
           <div className="flex justify-end gap-4 mt-8">
             <Button variant="secondary" onClick={() => navigate(-1)}>取消</Button>
-            <Button variant="primary" loading={saving} disabled={conflicts.staff || conflicts.room} onClick={handleSave}>儲存變更</Button>
+            <Button variant="primary" loading={saving} disabled={conflicts.staff || conflicts.room || conflicts.equip} onClick={handleSave}>儲存變更</Button>
           </div>
         </Card>
       )}

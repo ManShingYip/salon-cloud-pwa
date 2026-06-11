@@ -150,7 +150,7 @@ const ActivityLogPage = () => {
         </Select>
       </div>
 
-      <Card className="overflow-hidden">
+      <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : logs.length > 0 ? (
@@ -185,7 +185,7 @@ const ActivityLogPage = () => {
             <p className="text-sm mt-2">當系統有扣數、退款、新增客戶等操作時，會自動記錄在此。</p>
           </div>
         )}
-      </Card>
+      </div>
     </div>
   );
 };
