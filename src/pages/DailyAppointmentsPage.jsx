@@ -22,8 +22,6 @@ import { supabase } from '@/config/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { DayPicker } from 'react-day-picker';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
-import { zhHK } from 'date-fns/locale';
-import 'react-day-picker/dist/style.css';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Tag from '@/components/ui/Tag';
@@ -177,12 +175,9 @@ const DailyAppointmentsPage = () => {
               locale={zhHK}
               modifiers={{ booked: bookedDays.map(d => parseISO(d)) }}
               modifiersClassNames={{
-                booked: 'font-extrabold text-primary underline underline-offset-2',
+                booked: 'font-extrabold',
               }}
               className="w-full flex justify-center"
-              styles={{
-                root: { width: '100%', maxWidth: '100%', margin: '0 auto' },
-              }}
             />
           </div>
 
