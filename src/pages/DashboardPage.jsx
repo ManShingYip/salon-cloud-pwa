@@ -65,7 +65,7 @@ const DashboardPage = () => {
       safeQuery(() => supabase.from('clients').select('id', { count: 'exact', head: true }).gte('last_visit_date', thirtyDaysAgo)),
       safeQuery(() => supabase.from('clients').select('id', { count: 'exact', head: true }).gte('created_at', firstOfMonth)),
       safeQuery(() => supabase.from('payment_transactions').select('treatment_id, treatments(name)').gte('transaction_date', thirtyDaysAgo)),
-      safeQuery(() => supabase.from('appointments').select('staff_id, profiles(name)').eq('status', 'attended').gte('appointment_date', firstOfMonth)),
+      safeQuery(() => supabase.from('appointments').select('staff_id, staff(name)').eq('status', 'attended').gte('appointment_date', firstOfMonth)),
       safeQuery(() => supabase.from('client_services').select('*, clients(name), treatments(name)').eq('status', 'active').gte('expiry_date', today).lte('expiry_date', new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]).limit(10)),
       safeQuery(() => supabase.from('clients').select('id, name').not('last_visit_date', 'is', null).order('last_visit_date', { ascending: true }).limit(20)),
       // 緩存與確定收入（整月）
@@ -129,7 +129,7 @@ const DashboardPage = () => {
     // 員工表現彙總
     const staffMap = {};
     staffStats?.forEach(a => {
-      const name = a.profiles?.name || '未知';
+      const name = a.staff?.name || '未知';
       staffMap[name] = (staffMap[name] || 0) + 1;
     });
     const staffSummary = Object.entries(staffMap).sort((a, b) => b[1] - a[1]);
