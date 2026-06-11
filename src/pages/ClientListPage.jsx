@@ -85,63 +85,65 @@ const ClientListPage = () => {
       </div>
 
       {/* 客戶列表 */}
-      <div className="bg-surface rounded-2xl shadow-card overflow-x-auto">
+      <div className="bg-surface rounded-2xl shadow-card flex flex-col min-h-0 overflow-hidden border border-gray-100">
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : clients.length > 0 ? (
-          <Table hoverable className="min-w-full">
-            <Table.Head className="bg-bg">
-              <Table.HeadCell>客戶姓名</Table.HeadCell>
-              <Table.HeadCell>電話後四碼</Table.HeadCell>
-              <Table.HeadCell>會員編號</Table.HeadCell>
-              <Table.HeadCell>來源</Table.HeadCell>
-              <Table.HeadCell>狀態</Table.HeadCell>
-              <Table.HeadCell>最後到訪</Table.HeadCell>
-              <Table.HeadCell className="w-16"></Table.HeadCell>
-            </Table.Head>
-            <Table.Body className="divide-y">
-              {clients.map(c => (
-                <Table.Row
-                  key={c.id}
-                  className="cursor-pointer min-h-[56px] active:bg-gray-50"
-                  onClick={() => navigate(`/clients/${c.id}`)}
-                >
-                  <Table.Cell className="font-bold">
-                    <span className="flex items-center gap-2">
-                      {c.name}
-                      {c.is_sensitive && (
-                        <ExclamationTriangleIcon className="w-5 h-5 text-danger inline" title="特殊敏感客戶" />
+          <div className="overflow-y-auto">
+            <Table hoverable>
+              <Table.Head className="bg-bg sticky top-0 z-10">
+                <Table.HeadCell>客戶姓名</Table.HeadCell>
+                <Table.HeadCell>電話後四碼</Table.HeadCell>
+                <Table.HeadCell>會員編號</Table.HeadCell>
+                <Table.HeadCell>來源</Table.HeadCell>
+                <Table.HeadCell>狀態</Table.HeadCell>
+                <Table.HeadCell>最後到訪</Table.HeadCell>
+                <Table.HeadCell className="w-16"></Table.HeadCell>
+              </Table.Head>
+              <Table.Body className="divide-y">
+                {clients.map(c => (
+                  <Table.Row
+                    key={c.id}
+                    className="cursor-pointer min-h-[56px] active:bg-gray-50"
+                    onClick={() => navigate(`/clients/${c.id}`)}
+                  >
+                    <Table.Cell className="font-bold">
+                      <span className="flex items-center gap-2">
+                        {c.name}
+                        {c.is_sensitive && (
+                          <ExclamationTriangleIcon className="w-5 h-5 text-danger inline" title="特殊敏感客戶" />
+                        )}
+                      </span>
+                    </Table.Cell>
+                    <Table.Cell className="text-text-muted font-mono">
+                      ****{String(c.phone || '').slice(-4) || '----'}
+                    </Table.Cell>
+                    <Table.Cell className="font-mono text-primary font-bold">
+                      {c.member_id || '-'}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {getSourceTag(c.source)}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {c.is_sensitive ? (
+                        <Tag color="amber">⚠️ 特殊敏感</Tag>
+                      ) : c.last_visit_date ? (
+                        <Tag color="green">活躍</Tag>
+                      ) : (
+                        <Tag color="gray">新客戶</Tag>
                       )}
-                    </span>
-                  </Table.Cell>
-                  <Table.Cell className="text-text-muted font-mono">
-                    ****{c.phone?.slice(-4) || '----'}
-                  </Table.Cell>
-                  <Table.Cell className="font-mono text-primary font-bold">
-                    {c.member_id || '-'}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {getSourceTag(c.source)}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {c.is_sensitive ? (
-                      <Tag color="amber">⚠️ 特殊敏感</Tag>
-                    ) : c.last_visit_date ? (
-                      <Tag color="green">活躍</Tag>
-                    ) : (
-                      <Tag color="gray">新客戶</Tag>
-                    )}
-                  </Table.Cell>
-                  <Table.Cell className="text-sm text-text-muted">
-                    {c.last_visit_date || '尚未到訪'}
-                  </Table.Cell>
-                  <Table.Cell>
-                    <ChevronRightIcon className="w-5 h-5 text-text-muted" />
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-            </Table.Body>
-          </Table>
+                    </Table.Cell>
+                    <Table.Cell className="text-sm text-text-muted">
+                      {c.last_visit_date || '尚未到訪'}
+                    </Table.Cell>
+                    <Table.Cell>
+                      <ChevronRightIcon className="w-5 h-5 text-text-muted" />
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          </div>
         ) : (
           <div className="text-center py-20 text-text-muted">
             <p className="text-lg">暫無客戶資料</p>
