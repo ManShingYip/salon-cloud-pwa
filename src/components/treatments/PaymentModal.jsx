@@ -1,6 +1,6 @@
 /**
- * 扣減療程確認彈窗
- * 當預約改為「已出席」時自動彈出，讓員工選擇要扣減的療程庫存
+ * 支付療程確認彈窗
+ * 當預約改為「已出席」時自動彈出，讓員工選擇要支付的療程庫存
  */
 import React, { useState, useEffect } from 'react';
 import { Checkbox, Spinner, Alert } from 'flowbite-react';
@@ -9,7 +9,7 @@ import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
 import Tag from '@/components/ui/Tag';
 
-const DeductionModal = ({ show, onClose, appointment }) => {
+const PaymentModal = ({ show, onClose, appointment }) => {
   const [services, setServices] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +44,7 @@ const DeductionModal = ({ show, onClose, appointment }) => {
 
   const handleConfirm = async () => {
     if (selectedIds.length === 0) {
-      setError("請至少選擇一個要扣減的療程");
+      setError("請至少選擇一個要支付的療程");
       return;
     }
 
@@ -59,17 +59,17 @@ const DeductionModal = ({ show, onClose, appointment }) => {
       });
 
       if (rpcError) throw rpcError;
-      
+
       onClose();
     } catch (err) {
-      setError(err.message || "扣減失敗，請稍後再試");
+      setError(err.message || "支付失敗，請稍後再試");
     } finally {
       setSubmitting(false);
     }
   };
 
   const toggleSelect = (id) => {
-    setSelectedIds(prev => 
+    setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
@@ -78,11 +78,11 @@ const DeductionModal = ({ show, onClose, appointment }) => {
     <Modal
       show={show}
       onClose={onClose}
-      title="🔔 扣減療程確認"
+      title="💳 支付療程確認"
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={submitting}>取消</Button>
-          <Button variant="primary" onClick={handleConfirm} loading={submitting}>✅ 確認扣減</Button>
+          <Button variant="primary" onClick={handleConfirm} loading={submitting}>✅ 確認支付</Button>
         </>
       }
     >
@@ -93,7 +93,7 @@ const DeductionModal = ({ show, onClose, appointment }) => {
         </div>
 
         <div>
-          <h4 className="font-bold mb-3">請選擇要扣減的療程項目：</h4>
+          <h4 className="font-bold mb-3">請選擇要支付的療程項目：</h4>
           {loading ? (
             <div className="flex justify-center p-6"><Spinner /></div>
           ) : services.length > 0 ? (
@@ -137,18 +137,18 @@ const DeductionModal = ({ show, onClose, appointment }) => {
               </table>
             </div>
           ) : (
-            <Alert color="warning">該客戶目前沒有可用的預購療程，請先進行充值或現場購買。</Alert>
+            <Alert color="warning">該客戶目前沒有可用的預購療程，請先進行購買或現場支付。</Alert>
           )}
         </div>
 
         {error && <Alert color="failure">{error}</Alert>}
-        
+
         <p className="text-xs text-text-muted text-center italic">
-          * 系統將自動扣減選中項目的 1 次庫存，並將預約狀態更新為「已出席」。
+          * 系統將自動支付選中項目的 1 次庫存，並將預約狀態更新為「已出席」。
         </p>
       </div>
     </Modal>
   );
 };
 
-export default DeductionModal;
+export default PaymentModal;

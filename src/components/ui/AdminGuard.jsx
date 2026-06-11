@@ -49,7 +49,7 @@ const AdminGuard = ({ children, fallbackMessage }) => {
           <li>🏠 儀表板總覽</li>
           <li>📅 今日預約管理</li>
           <li>👥 客戶查詢</li>
-          <li>💰 每日結算檢視</li>
+          <li>💰 收入紀錄檢視</li>
         </ul>
       </div>
     </div>

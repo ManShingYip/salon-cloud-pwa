@@ -1,6 +1,6 @@
 /**
  * 收入紀錄頁面
- * 可視化查詢 payment_transactions — 日期篩選、支付方式篩選、總計、每日加總、明細
+ * 可視化查詢 payment_transactions — 日期篩選、支付方式篩選、總計、每月加總、明細
  */
 import React, { useState, useEffect } from 'react';
 import { Table, Select, Spinner } from 'flowbite-react';
@@ -44,7 +44,7 @@ const RevenuePage = () => {
     return acc;
   }, { total: 0, cash: 0, card: 0, transfer: 0 });
 
-  // 每日加總
+  // 每月加總
   const dailyTotals = {};
   transactions.forEach(tx => {
     dailyTotals[tx.transaction_date] = (dailyTotals[tx.transaction_date] || 0) + parseFloat(tx.amount || 0);
@@ -111,11 +111,11 @@ const RevenuePage = () => {
         </div>
       </div>
 
-      {/* 每日加總 */}
+      {/* 每月加總 */}
       {dailyEntries.length > 0 && (
         <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
           <div className="p-5 border-b border-gray-50">
-            <h3 className="font-bold">每日收入</h3>
+            <h3 className="font-bold">每月收入</h3>
           </div>
           <div className="p-5 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
             {dailyEntries.map(([date, total]) => (

@@ -1,6 +1,6 @@
 /**
  * 活動日誌頁面 (店長權限)
- * 紀錄所有關鍵操作，如扣數、新增客戶、修改預約等
+ * 紀錄所有關鍵操作，如支付、新增客戶、修改預約等
  */
 import React, { useState, useEffect } from 'react';
 import { TextInput, Select, Spinner } from 'flowbite-react';
@@ -29,16 +29,16 @@ const ActivityLogPage = () => {
   };
 
   const actionLabels = {
-    deduct_service: '療程扣減',
-    complete_deduction: '扣減完成',
+    deduct_service: '療程支付',
+    complete_deduction: '支付完成',
     create_appointment: '新增預約',
     cancel_appointment: '取消預約',
     update_client: '修改客戶',
     create_client: '新增客戶',
-    finalize_settlement: '每日結算',
+    finalize_settlement: '結算',
     grant_sessions: '新增療程',
     refund: '退款',
-    revert_deduction: '退回扣減',
+    revert_deduction: '退回支付',
     revert_appointment: '退回預約',
   };
   const getActionLabel = (t) => actionLabels[t] || t;
@@ -64,16 +64,16 @@ const ActivityLogPage = () => {
       appointment_id: '預約 ID',
       client_service_id: '療程庫存 ID',
       treatment_name: '療程名稱',
-      before_remaining: '扣前次數',
-      after_remaining: '扣後次數',
+      before_remaining: '支付前次數',
+      after_remaining: '支付後次數',
       total_amount: '總金額',
       payment_method: '付款方式',
       transaction_id: '交易 ID',
-      deducted_services: '已扣療程',
+      deducted_services: '已支付療程',
       settlement_date: '結算日期',
       reason: '原因',
-      previous_status: '扣前狀態',
-      new_status: '扣後狀態',
+      previous_status: '支付前狀態',
+      new_status: '支付後狀態',
       restored_count: '已退回次數',
       restored_services_count: '已退回項數',
       voided_transaction_ids: '作廢交易 ID',
@@ -143,10 +143,10 @@ const ActivityLogPage = () => {
           onChange={(e) => setFilter({...filter, type: e.target.value})}
         >
           <option value="">所有類型</option>
-          <option value="deduct_service">療程扣減</option>
+          <option value="deduct_service">療程支付</option>
           <option value="create_appointment">新增預約</option>
           <option value="update_client">修改客戶</option>
-          <option value="finalize_settlement">每日結算</option>
+          <option value="finalize_settlement">結算</option>
         </Select>
       </div>
 
@@ -184,7 +184,7 @@ const ActivityLogPage = () => {
           <div className="text-center py-20 text-text-muted">
             <ClipboardDocumentListIcon className="w-16 h-16 mx-auto opacity-20 mb-4" />
             <p className="text-lg">暫無活動紀錄</p>
-            <p className="text-sm mt-2">當系統有扣數、退款、新增客戶等操作時，會自動記錄在此。</p>
+            <p className="text-sm mt-2">當系統有支付、退款、新增客戶等操作時，會自動記錄在此。</p>
           </div>
         )}
       </div>

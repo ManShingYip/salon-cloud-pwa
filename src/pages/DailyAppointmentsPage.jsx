@@ -27,7 +27,7 @@ import { zhHK } from 'date-fns/locale';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Tag from '@/components/ui/Tag';
-import DeductionModal from '@/components/treatments/DeductionModal';
+import PaymentModal from '@/components/treatments/PaymentModal';
 
 const DailyAppointmentsPage = () => {
   const navigate = useNavigate();
@@ -42,8 +42,8 @@ const DailyAppointmentsPage = () => {
   const [weekAppointments, setWeekAppointments] = useState({});
   const [refMonth, setRefMonth] = useState(new Date());
 
-  // 搜刮 Deduction/退回 Modal 等保持不變
-  const [showDeduction, setShowDeduction] = useState(false);
+  // Payment/退回 Modal
+  const [showPayment, setShowPayment] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [sensitiveAlert, setSensitiveAlert] = useState(null);
   const [showRevert, setShowRevert] = useState(false);
@@ -107,7 +107,7 @@ const DailyAppointmentsPage = () => {
       setSensitiveAlert({ clientName: app.clients.name, note: app.clients.sensitive_note || '此客戶被標記為特殊敏感，請在服務時特別注意。' });
     }
     setSelectedAppointment(app);
-    setShowDeduction(true);
+    setShowPayment(true);
   };
 
   const handleRevert = async () => {
@@ -284,7 +284,7 @@ const DailyAppointmentsPage = () => {
                               <Button variant="secondary" size="xs" icon={ArrowUturnLeftIcon} onClick={(e) => { e.stopPropagation(); setRevertAppointment(app); setRevertReason(''); setShowRevert(true); }} />
                             )}
                             {app.status === 'confirmed' && (
-                              <Button variant="secondary" size="xs" onClick={(e) => { e.stopPropagation(); handleStatusChange(app); }}>扣數</Button>
+                              <Button variant="secondary" size="xs" onClick={(e) => { e.stopPropagation(); handleStatusChange(app); }}>支付</Button>
                             )}
                             {app.status === 'confirmed' && (
                               <div className="flex gap-1">
@@ -304,9 +304,9 @@ const DailyAppointmentsPage = () => {
         </section>
       </div>
 
-      {/* Deduction Modal */}
+      {/* Payment Modal */}
       {selectedAppointment && (
-        <DeductionModal show={showDeduction} onClose={() => { setShowDeduction(false); setSensitiveAlert(null); loadWeekAppointments(); }} appointment={selectedAppointment} />
+        <PaymentModal show={showPayment} onClose={() => { setShowPayment(false); setSensitiveAlert(null); loadWeekAppointments(); }} appointment={selectedAppointment} />
       )}
 
       {/* 退回 Modal */}
@@ -314,7 +314,7 @@ const DailyAppointmentsPage = () => {
         footer={<><Button variant="secondary" onClick={() => setShowRevert(false)}>取消</Button><Button variant="danger" disabled={!revertReason.trim()} loading={reverting} onClick={handleRevert}>確認退回</Button></>}
       >
         <div className="space-y-4">
-          <Alert color="warning"><b>⚠️ 此操作將：</b><br />1. 回補已扣減的療程次數<br />2. 標記交易為 VOID<br />3. 預約狀態回到「已確認」</Alert>
+          <Alert color="warning"><b>⚠️ 此操作將：</b><br />1. 回補已支付的療程次數<br />2. 標記交易為 VOID<br />3. 預約狀態回到「已確認」</Alert>
           {revertAppointment && (<div className="bg-bg p-4 rounded-xl text-sm"><p>客戶：<b>{revertAppointment.clients?.name}</b></p><p>療程：<b>{revertAppointment.treatments?.name}</b></p></div>)}
           <div><label className="block text-sm font-medium mb-2">退回原因 (必填)</label><TextInput placeholder="例：客戶臨時取消" value={revertReason} onChange={(e) => setRevertReason(e.target.value)} /></div>
         </div>

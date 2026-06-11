@@ -58,7 +58,7 @@ const ClientDetailPage = () => {
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // 💳 支付 Modal（原扣減）
+  // 💳 支付 Modal
   const [showPayment, setShowPayment] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState(null);
   const [paymentForm, setPaymentForm] = useState({ sessions: '1', payment_method: 'cash', reason: '' });
@@ -187,7 +187,7 @@ const ClientDetailPage = () => {
       const sessionsToDeduct = parseInt(paymentForm.sessions) || 1;
       const target = paymentTarget;
 
-      // 1. 扣減療程次數
+      // 1. 支付療程次數
       const newRemaining = target.remaining_sessions - sessionsToDeduct;
       const { error: updateError } = await supabase
         .from('client_services')
