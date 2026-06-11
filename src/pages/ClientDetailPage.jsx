@@ -1,22 +1,20 @@
 /**
  * 客戶詳情頁面 - iPad 橫向佈局
  * 左側客戶基本資訊與提示 + 右側已購療程庫存 + 下方預約歷史
- * v2: 加入購買療程 Modal
+ * v2: 加入購買療程 Modal，使用原生 <table> 避免 Flowbite 陰影 bug
  */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Table, Badge, Spinner, Alert, TextInput, Select } from 'flowbite-react';
+import { Spinner, Alert, TextInput } from 'flowbite-react';
 import {
   ArrowLeftIcon,
   UserCircleIcon,
   PhoneIcon,
-  IdentificationIcon,
   TagIcon,
   ExclamationTriangleIcon,
   SparklesIcon,
   ClockIcon,
   ShoppingCartIcon,
-  ArrowUturnLeftIcon,
 } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import Button from '@/components/ui/Button';
@@ -28,17 +26,20 @@ const ClientDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const isOwner = user?.role === 'shop_owner';
 
   const [client, setClient] = useState(null);
   const [services, setServices] = useState([]);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // 📝 編輯客戶 Modal
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', phone: '', source: '', remarks: '', is_sensitive: false, sensitive_note: '' });
   const [editing, setEditing] = useState(false);
+
+  // 🛒 購買療程 Modal
+  const [showPurchase, setShowPurchase] = useState(false);
   const [allTreatments, setAllTreatments] = useState([]);
   const [purchaseForm, setPurchaseForm] = useState({ treatment_id: '', sessions: 1, unit_price: '', expiry_date: '' });
   const [purchasing, setPurchasing] = useState(false);
@@ -51,9 +52,11 @@ const ClientDetailPage = () => {
   const [refunding, setRefunding] = useState(false);
   const [refundError, setRefundError] = useState(null);
 
-  // 🗑️ 刪除客戶 + 手動扣減 Modal
+  // 🗑️ 刪除客戶 Modal
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  // ✂️ 手動扣減 Modal
   const [showManualDeduct, setShowManualDeduct] = useState(false);
   const [manualDeductTarget, setManualDeductTarget] = useState(null);
   const [manualDeductForm, setManualDeductForm] = useState({ sessions: '1', payment_method: 'cash', reason: '' });
@@ -66,13 +69,29 @@ const ClientDetailPage = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: clientData } = await supabase.from('clients').select('*').eq('id', id).maybeSingle();
-    const { data: svcData } = await supabase.from('client_services').select('*, treatments(name)').eq('client_id', id);
-    const { data: histData } = await supabase.from('appointments').select('*, treatments(name), profiles!appointments_staff_id_fkey(name)').eq('client_id', id).order('appointment_date', { ascending: false });
+    setError(null);
+    try {
+      const [
+        { data: clientData },
+        { data: svcData },
+        { data: histData },
+      ] = await Promise.all([
+        supabase.from('clients').select('*').eq('id', id).maybeSingle(),
+        supabase.from('client_services').select('*, treatments(name)').eq('client_id', id),
+        supabase.from('appointments').select('*, treatments(name), profiles(name)').eq('client_id', id).order('appointment_date', { ascending: false }),
+      ]);
 
-    setClient(clientData);
-    setServices(svcData || []);
-    setHistory(histData || []);
+      if (!clientData) {
+        setError('找不到該客戶資料');
+      } else {
+        setClient(clientData);
+      }
+      setServices(svcData || []);
+      setHistory(histData || []);
+    } catch (err) {
+      console.warn('fetchData error:', err.message);
+      setError('載入客戶資料時發生錯誤: ' + err.message);
+    }
     setLoading(false);
   };
 
@@ -118,6 +137,7 @@ const ClientDetailPage = () => {
     }
     setRefunding(false);
   };
+
   // 🛒 購買療程
   const handlePurchase = async () => {
     if (!purchaseForm.treatment_id) { setPurchaseError('請選擇療程'); return; }
@@ -143,39 +163,46 @@ const ClientDetailPage = () => {
   };
 
   if (loading) return <div className="flex justify-center p-20"><Spinner size="xl" /></div>;
+  if (error) return <Alert color="failure">{error}</Alert>;
   if (!client) return <Alert color="failure">找不到該客戶資料</Alert>;
 
+  const sourceColor = client.source?.includes('IG') ? 'rose' : client.source?.includes('朋友') ? 'green' : 'blue';
+
   return (
-    <div className="space-y-6">
-      <header className="flex justify-between items-center">
-        <button 
-          onClick={() => navigate(-1)}
+    <div className="flex flex-col h-full space-y-6">
+      {/* 頂部操作列 */}
+      <header className="flex justify-between items-center shrink-0">
+        <button
+          onClick={() => navigate('/clients')}
           className="flex items-center gap-2 text-text-muted hover:text-primary transition-colors"
         >
           <ArrowLeftIcon className="w-5 h-5" />
           <span className="font-medium">返回客戶列表</span>
         </button>
-        <Button variant="secondary" icon={UserCircleIcon} onClick={() => {
-          setEditForm({
-            name: client.name || '',
-            phone: client.phone || '',
-            source: client.source || '',
-            remarks: client.remarks || '',
-            is_sensitive: client.is_sensitive || false,
-            sensitive_note: client.sensitive_note || '',
-          });
-          setShowEdit(true);
-        }}>編輯客戶資料</Button>
-        <Button variant="danger" onClick={() => setShowDelete(true)}>刪除客戶</Button>
+        <div className="flex gap-2">
+          <Button variant="secondary" icon={UserCircleIcon} onClick={() => {
+            setEditForm({
+              name: client.name || '',
+              phone: client.phone || '',
+              source: client.source || '',
+              remarks: client.remarks || '',
+              is_sensitive: client.is_sensitive || false,
+              sensitive_note: client.sensitive_note || '',
+            });
+            setShowEdit(true);
+          }}>編輯客戶資料</Button>
+          <Button variant="danger" onClick={() => setShowDelete(true)}>刪除客戶</Button>
+        </div>
       </header>
 
-      <div className="flex gap-6 items-start">
+      {/* 主內容：左右並排 */}
+      <div className="flex-1 min-h-0 flex gap-6 items-start">
         {/* 左側：客戶基本資訊 (320px) */}
-        <aside className="w-[320px] space-y-6">
+        <aside className="w-[320px] shrink-0 space-y-6">
           <div className="bg-surface rounded-2xl p-6 shadow-card border border-gray-100">
             <div className="flex flex-col items-center text-center mb-6">
               <div className="w-20 h-20 rounded-full bg-primary-light flex items-center justify-center text-primary text-3xl font-bold mb-3">
-                {client.name[0]}
+                {client.name?.[0] || '?'}
               </div>
               <h2 className="text-2xl font-bold text-text flex items-center gap-2">
                 {client.name}
@@ -192,21 +219,19 @@ const ClientDetailPage = () => {
               <div className="flex items-center gap-3 text-text">
                 <TagIcon className="w-5 h-5 text-text-muted" />
                 <div className="flex gap-1">
-                  <Tag color={client.source?.includes('IG') ? 'rose' : client.source?.includes('朋友') ? 'green' : 'blue'}>
-                  {client.source || '無標記'}
-                </Tag>
+                  <Tag color={sourceColor}>{client.source || '無標記'}</Tag>
                   {client.is_sensitive && <Tag color="amber">特殊敏感</Tag>}
                 </div>
               </div>
               <div className="border-t pt-4 mt-4">
                 <span className="text-xs font-bold text-text-muted uppercase block mb-2">備註資訊</span>
-                <p className="text-sm text-text bg-bg p-3 rounded-xl min-h-[80px]">
+                <p className="text-sm text-text bg-bg p-3 rounded-xl min-h-[80px] whitespace-pre-wrap">
                   {client.remarks || '暫無特殊備註'}
                 </p>
               </div>
             </div>
           </div>
-          
+
           {client.is_sensitive && client.sensitive_note && (
             <Alert color="warning" icon={ExclamationTriangleIcon}>
               <b>注意事項：</b> {client.sensitive_note}
@@ -214,9 +239,10 @@ const ClientDetailPage = () => {
           )}
         </aside>
 
-        {/* 右側：已購療程庫存 */}
-        <section className="flex-1 space-y-4">
-          <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
+        {/* 右側：已購療程庫存 + 預約歷史 */}
+        <section className="flex-1 min-w-0 space-y-4 min-h-0 flex flex-col">
+          {/* 已購療程庫存 */}
+          <div className="bg-surface rounded-2xl shadow-card border border-gray-100 overflow-hidden shrink-0">
             <div className="p-5 border-b border-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <SparklesIcon className="w-6 h-6 text-primary" />
@@ -226,7 +252,7 @@ const ClientDetailPage = () => {
                 新增購買
               </Button>
             </div>
-            
+
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
               {services.map(svc => (
                 <div key={svc.id} className="p-4 rounded-2xl border border-gray-100 bg-white flex justify-between items-center shadow-sm">
@@ -238,15 +264,15 @@ const ClientDetailPage = () => {
                     </div>
                     <p className="text-[10px] text-text-muted">到期日：{svc.expiry_date || '不限期'}</p>
                   </div>
-                    <div className="flex gap-2">
-                      <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
-                      <Button variant="secondary" size="md" onClick={() => {
-                        setManualDeductTarget(svc);
-                        setManualDeductForm({ sessions: '1', payment_method: 'cash', reason: '' });
-                        setManualDeductError(null);
-                        setShowManualDeduct(true);
-                      }}>手動扣減</Button>
-                    </div>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
+                    <Button variant="secondary" size="md" onClick={() => {
+                      setManualDeductTarget(svc);
+                      setManualDeductForm({ sessions: '1', payment_method: 'cash', reason: '' });
+                      setManualDeductError(null);
+                      setShowManualDeduct(true);
+                    }}>手動扣減</Button>
+                  </div>
                 </div>
               ))}
               {services.length === 0 && (
@@ -257,38 +283,48 @@ const ClientDetailPage = () => {
             </div>
           </div>
 
-          {/* 下方：預約歷史 */}
-          <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
-            <div className="p-5 border-b border-gray-50 flex items-center gap-2">
+          {/* 預約歷史 — 原生 <table> */}
+          <div className="bg-surface rounded-2xl shadow-card border border-gray-100 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="p-5 border-b border-gray-50 flex items-center gap-2 shrink-0">
               <ClockIcon className="w-6 h-6 text-text-muted" />
               <h3 className="font-bold text-lg">預約歷史紀錄</h3>
             </div>
-            <Table hoverable>
-              <Table.Head className="bg-bg">
-                <Table.HeadCell>日期</Table.HeadCell>
-                <Table.HeadCell>療程項目</Table.HeadCell>
-                <Table.HeadCell>美容師</Table.HeadCell>
-                <Table.HeadCell>狀態</Table.HeadCell>
-                <Table.HeadCell>備註</Table.HeadCell>
-              </Table.Head>
-              <Table.Body className="divide-y">
-                {history.map(item => (
-                  <Table.Row key={item.id}>
-                    <Table.Cell className="font-bold">{item.appointment_date}</Table.Cell>
-                    <Table.Cell>{item.treatments?.name}</Table.Cell>
-                    <Table.Cell>{item.profiles?.name || item.staff?.name}</Table.Cell>
-                    <Table.Cell>
-                      <Tag color={item.status === 'attended' ? 'green' : item.status === 'cancelled' ? 'gray' : 'amber'}>
-                        {item.status === 'attended' ? '已出席' : item.status === 'cancelled' ? '已取消' : '未出席'}
-                      </Tag>
-                    </Table.Cell>
-                    <Table.Cell className="text-xs text-text-muted max-w-[200px] truncate">
-                      {item.remarks || '-'}
-                    </Table.Cell>
-                  </Table.Row>
-                ))}
-              </Table.Body>
-            </Table>
+            <div className="overflow-auto flex-1">
+              <table className="w-full text-left text-sm">
+                <thead className="sticky top-0 z-10">
+                  <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
+                    <th className="px-6 py-4 font-bold">日期</th>
+                    <th className="px-6 py-4 font-bold">療程項目</th>
+                    <th className="px-6 py-4 font-bold">美容師</th>
+                    <th className="px-6 py-4 font-bold">狀態</th>
+                    <th className="px-6 py-4 font-bold">備註</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {history.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-6 py-10 text-center text-text-muted italic">尚無預約紀錄</td>
+                    </tr>
+                  ) : (
+                    history.map(item => (
+                      <tr key={item.id}>
+                        <td className="px-6 py-4 font-bold">{item.appointment_date}</td>
+                        <td className="px-6 py-4">{item.treatments?.name || '-'}</td>
+                        <td className="px-6 py-4">{item.profiles?.name || '-'}</td>
+                        <td className="px-6 py-4">
+                          <Tag color={item.status === 'attended' ? 'green' : item.status === 'cancelled' ? 'gray' : 'amber'}>
+                            {item.status === 'attended' ? '已出席' : item.status === 'cancelled' ? '已取消' : '未出席'}
+                          </Tag>
+                        </td>
+                        <td className="px-6 py-4 text-xs text-text-muted max-w-[200px] truncate">
+                          {item.remarks || '-'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
       </div>
@@ -466,7 +502,7 @@ const ClientDetailPage = () => {
           </div>
           <h4 className="text-xl font-bold text-danger">此操作無法恢復！</h4>
           <p className="text-text-muted">
-            客戶 <b>「{client.name}」</b> 的所有資料將被永久刪除，<br/>
+            客戶 <b>「{client.name}」</b> 的所有資料將被永久刪除，<br />
             包括預約記錄、療程庫存及相關交易紀錄（CASCADE）。
           </p>
         </div>
