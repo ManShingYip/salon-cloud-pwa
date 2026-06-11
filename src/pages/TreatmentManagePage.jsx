@@ -101,17 +101,17 @@ const TreatmentManagePage = () => {
     setSaving(false);
   };
 
-  // 🛡️ 三層防禦：檢查關聯數據
+  // 🛡️ 三層防禦：檢查關聯數據 + 擷取實際關聯名單
   const checkDependencies = async (t) => {
     setCheckingDeps(true);
     try {
       const [
-        { count: activeServicesCount },
+        { data: activeServicesData, count: activeServicesCount },
         { count: totalAppointmentsCount },
         { count: totalTransactionsCount },
       ] = await Promise.all([
         supabase.from('client_services')
-          .select('id', { count: 'exact', head: true })
+          .select('id, remaining_sessions, total_sessions, clients(name, phone, id)', { count: 'exact' })
           .eq('treatment_id', t.id)
           .gt('remaining_sessions', 0),
         supabase.from('appointments')
@@ -125,6 +125,7 @@ const TreatmentManagePage = () => {
       setDeleteDeps({
         treatment: t,
         activeServices: activeServicesCount || 0,
+        activeServicesData: activeServicesData || [],
         totalAppointments: totalAppointmentsCount || 0,
         totalTransactions: totalTransactionsCount || 0,
       });
@@ -134,6 +135,7 @@ const TreatmentManagePage = () => {
       setDeleteDeps({
         treatment: t,
         activeServices: 0,
+        activeServicesData: [],
         totalAppointments: 0,
         totalTransactions: 0,
       });
@@ -178,7 +180,7 @@ const TreatmentManagePage = () => {
     const deps = deleteDeps;
     if (!deps) return null;
 
-    const { treatment, activeServices, totalAppointments, totalTransactions } = deps;
+    const { treatment, activeServices, activeServicesData, totalAppointments, totalTransactions } = deps;
 
     // 🔴 層級三
     if (activeServices > 0) {
@@ -189,24 +191,72 @@ const TreatmentManagePage = () => {
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-xl p-4">
               <p className="font-bold text-danger text-lg mb-2">此療程目前仍有客戶持有有效套票！</p>
-              <div className="flex items-center gap-2 text-sm text-text">
-                <UsersIcon className="w-5 h-5 text-danger" />
-                <span><b>{activeServices}</b> 位客戶仍有剩餘次數未使用完畢</span>
+              <p className="text-sm text-text">
+                共有 <b>{activeServices}</b> 筆有效庫存未使用完畢。
+              </p>
+            </div>
+
+            {/* 🔍 顯示實際持有此療程的客戶名單 */}
+            {activeServicesData.length > 0 && (
+              <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 text-xs uppercase text-text-muted border-b border-gray-100">
+                      <th className="px-4 py-3 text-left font-bold">客戶姓名</th>
+                      <th className="px-4 py-3 text-center font-bold">剩餘次數</th>
+                      <th className="px-4 py-3 text-center font-bold">總次數</th>
+                      <th className="px-4 py-3 text-right font-bold">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {activeServicesData.map(svc => (
+                      <tr key={svc.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-bold">
+                          {svc.clients?.name || '—'}
+                          {svc.clients?.phone && (
+                            <span className="text-text-muted font-normal ml-2">{String(svc.clients.phone).slice(-4)}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="font-bold text-danger">{svc.remaining_sessions}</span>
+                        </td>
+                        <td className="px-4 py-3 text-center text-text-muted">{svc.total_sessions}</td>
+                        <td className="px-4 py-3 text-right">
+                          {svc.clients?.id && (
+                            <a
+                              href={`/clients/${svc.clients.id}`}
+                              className="text-primary text-xs font-medium hover:underline"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                // 關閉 modal 然後導向
+                                setShowDeleteConfirm(null);
+                                setDeleteDeps(null);
+                                setTimeout(() => {
+                                  window.open(`/clients/${svc.clients.id}`, '_self');
+                                }, 100);
+                              }}
+                            >
+                              查看 →
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
+            )}
+
             <div className="text-sm text-text-muted space-y-2">
-              <p>為保護客戶權益及店舖合約義務，您必須先處理這些套票：</p>
+              <p>為保護客戶權益，您必須先處理這些套票才能停用：</p>
               <ul className="list-disc pl-5 space-y-1">
-                <li>前往每位客戶的詳情頁 → 為相關療程辦理<b>退款</b></li>
-                <li>或等待客戶將剩餘次數全部使用完畢</li>
+                <li>點擊各客戶旁的<b>「查看 →」</b>前往詳情頁辦理<b>退款</b></li>
+                <li>或等待客戶將剩餘次數全部使用完畢後再停用</li>
               </ul>
-            </div>
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-text">
-              💡 <b>提示：</b>您可以在「客戶管理」中搜尋此療程名稱，找出持有此套票的客戶。
             </div>
           </div>
         ),
-        confirmLabel: null, // 不顯示確認按鈕
+        confirmLabel: null,
         confirmVariant: null,
       };
     }
