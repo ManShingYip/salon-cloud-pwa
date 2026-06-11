@@ -84,11 +84,11 @@ const ClientListPage = () => {
       </div>
 
       {/* 客戶列表 */}
-      <div className="bg-surface rounded-2xl shadow-card flex flex-col min-h-0 overflow-hidden border border-gray-100">
+      <div className="flex-1 bg-surface rounded-2xl shadow-card flex flex-col min-h-0 overflow-hidden border border-gray-100">
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : clients.length > 0 ? (
-          <div className="overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <Table hoverable>
               <Table.Head className="bg-bg sticky top-0 z-10">
                 <Table.HeadCell>客戶姓名</Table.HeadCell>
