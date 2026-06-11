@@ -15,7 +15,7 @@ import DashboardPage from '@/pages/DashboardPage';
 import DailyAppointmentsPage from '@/pages/DailyAppointmentsPage';
 import NewAppointmentPage from '@/pages/NewAppointmentPage';
 import EditAppointmentPage from '@/pages/EditAppointmentPage';
-import RevenuePage from '@/pages/DailySettlementPage';
+import OrderManagePage from '@/pages/DailySettlementPage';
 import ClientListPage from '@/pages/ClientListPage';
 import ClientDetailPage from '@/pages/ClientDetailPage';
 import TreatmentManagePage from '@/pages/TreatmentManagePage';
@@ -60,7 +60,7 @@ const AppRoutes = () => {
           <Route path="appointments/:id/edit" element={<EditAppointmentPage />} />
           <Route path="clients" element={<ClientListPage />} />
           <Route path="clients/:id" element={<ClientDetailPage />} />
-          <Route path="settlement" element={<RevenuePage />} />
+          <Route path="settlement" element={<OrderManagePage />} />
           <Route path="treatments" element={<TreatmentManagePage />} />
           <Route path="schedules" element={<StaffSchedulePage />} />
           <Route path="logs" element={<ActivityLogPage />} />
