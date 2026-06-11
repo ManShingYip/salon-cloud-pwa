@@ -32,17 +32,16 @@ const ClientListPage = () => {
 
   const fetchClients = async (query = '') => {
     setLoading(true);
-    console.log('🔍 fetchClients called, query:', query);
     try {
       let req = supabase.from('clients').select('*').order('name');
       if (query.length > 0) {
         req = req.or(`name.ilike.%${query}%,phone.ilike.%${query}%`);
       }
       const { data, error } = await req;
-      console.log('📊 fetchClients result:', { count: data?.length, error: error?.message, first: data?.[0]?.name });
+      if (error) console.warn('fetchClients error:', error.message);
       setClients(data || []);
     } catch (err) {
-      console.error('💥 fetchClients error:', err.message);
+      console.warn('fetchClients exception:', err.message);
     }
     setLoading(false);
   };
