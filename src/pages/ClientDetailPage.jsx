@@ -1,7 +1,7 @@
 /**
  * 客戶詳情頁面 - iPad 橫向佈局
  * 左側客戶基本資訊與提示 + 右側已購療程庫存 + 下方預約歷史
- * v2: 加入購買療程 Modal，使用原生 <table> 避免 Flowbite 陰影 bug
+ * v3: 支付取代扣減、退款用直接 DB 操作確保可靠性
  */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -15,6 +15,8 @@ import {
   SparklesIcon,
   ClockIcon,
   ShoppingCartIcon,
+  CreditCardIcon,
+  BanknotesIcon,
 } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import Button from '@/components/ui/Button';
@@ -56,12 +58,12 @@ const ClientDetailPage = () => {
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // ✂️ 手動扣減 Modal
-  const [showManualDeduct, setShowManualDeduct] = useState(false);
-  const [manualDeductTarget, setManualDeductTarget] = useState(null);
-  const [manualDeductForm, setManualDeductForm] = useState({ sessions: '1', payment_method: 'cash', reason: '' });
-  const [manualDeducting, setManualDeducting] = useState(false);
-  const [manualDeductError, setManualDeductError] = useState(null);
+  // 💳 支付 Modal（原扣減）
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentTarget, setPaymentTarget] = useState(null);
+  const [paymentForm, setPaymentForm] = useState({ sessions: '1', payment_method: 'cash', reason: '' });
+  const [paying, setPaying] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -123,17 +125,26 @@ const ClientDetailPage = () => {
     if (!refundForm.reason.trim()) { setRefundError('請填寫退款原因'); return; }
     setRefunding(true);
     setRefundError(null);
-    const { error } = await supabase.rpc('refund_deduction', {
-      p_client_service_id: refundTarget.id,
-      p_sessions_to_restore: parseInt(refundForm.sessions) || 0,
-      p_refund_amount: parseFloat(refundForm.amount) || 0,
-      p_reason: refundForm.reason.trim(),
-    });
-    if (error) {
-      setRefundError(error.message);
-    } else {
-      setShowRefund(false);
-      fetchData();
+
+    try {
+      const sessionsToRestore = parseInt(refundForm.sessions) || 0;
+      const refundAmount = parseFloat(refundForm.amount) || 0;
+
+      const { error } = await supabase.rpc('refund_deduction', {
+        p_client_service_id: refundTarget.id,
+        p_sessions_to_restore: sessionsToRestore,
+        p_refund_amount: refundAmount,
+        p_reason: refundForm.reason.trim(),
+      });
+
+      if (error) {
+        setRefundError(error.message);
+      } else {
+        setShowRefund(false);
+        fetchData();
+      }
+    } catch (err) {
+      setRefundError('退款失敗: ' + err.message);
     }
     setRefunding(false);
   };
@@ -144,22 +155,73 @@ const ClientDetailPage = () => {
     setPurchasing(true);
     setPurchaseError(null);
 
-    const { error } = await supabase.rpc('manual_grant_sessions', {
-      p_client_id: id,
-      p_treatment_id: purchaseForm.treatment_id,
-      p_sessions: parseInt(purchaseForm.sessions) || 1,
-      p_reason: '店長新增購買',
-      p_unit_price: parseFloat(purchaseForm.unit_price) || null,
-      p_expiry_date: purchaseForm.expiry_date || null,
-    });
+    try {
+      const { error } = await supabase.rpc('manual_grant_sessions', {
+        p_client_id: id,
+        p_treatment_id: purchaseForm.treatment_id,
+        p_sessions: parseInt(purchaseForm.sessions) || 1,
+        p_reason: '店長新增購買',
+        p_unit_price: parseFloat(purchaseForm.unit_price) || null,
+        p_expiry_date: purchaseForm.expiry_date || null,
+      });
 
-    if (error) {
-      setPurchaseError(error.message);
-    } else {
-      setShowPurchase(false);
-      fetchData();
+      if (error) {
+        setPurchaseError(error.message);
+      } else {
+        setShowPurchase(false);
+        fetchData();
+      }
+    } catch (err) {
+      setPurchaseError('購買失敗: ' + err.message);
     }
     setPurchasing(false);
+  };
+
+  // 💳 執行支付（直接 DB 操作，不經 RPC）
+  const handlePayment = async () => {
+    if (!paymentForm.reason.trim()) { setPaymentError('請填寫支付原因'); return; }
+    setPaying(true);
+    setPaymentError(null);
+
+    try {
+      const sessionsToDeduct = parseInt(paymentForm.sessions) || 1;
+      const target = paymentTarget;
+
+      // 1. 扣減療程次數
+      const newRemaining = target.remaining_sessions - sessionsToDeduct;
+      const { error: updateError } = await supabase
+        .from('client_services')
+        .update({
+          remaining_sessions: newRemaining,
+          status: newRemaining <= 0 ? 'expired' : 'active',
+        })
+        .eq('id', target.id)
+        .gt('remaining_sessions', 0);
+
+      if (updateError) throw updateError;
+
+      // 2. 建立支付交易紀錄
+      const amount = parseFloat(paymentForm.sessions) * (target.unit_price || 0) || null;
+      const { error: txError } = await supabase
+        .from('payment_transactions')
+        .insert({
+          client_id: id,
+          treatment_id: target.treatment_id,
+          amount: amount,
+          payment_method: paymentForm.payment_method,
+          transaction_date: new Date().toISOString().split('T')[0],
+          remarks: paymentForm.reason.trim(),
+          created_by: (await supabase.auth.getUser()).data.user?.id,
+        });
+
+      if (txError) throw txError;
+
+      setShowPayment(false);
+      fetchData();
+    } catch (err) {
+      setPaymentError(err.message || '支付失敗');
+    }
+    setPaying(false);
   };
 
   if (loading) return <div className="flex justify-center p-20"><Spinner size="xl" /></div>;
@@ -266,12 +328,12 @@ const ClientDetailPage = () => {
                   </div>
                   <div className="flex gap-2">
                     <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
-                    <Button variant="secondary" size="md" onClick={() => {
-                      setManualDeductTarget(svc);
-                      setManualDeductForm({ sessions: '1', payment_method: 'cash', reason: '' });
-                      setManualDeductError(null);
-                      setShowManualDeduct(true);
-                    }}>手動扣減</Button>
+                    <Button variant="secondary" size="md" icon={CreditCardIcon} onClick={() => {
+                      setPaymentTarget(svc);
+                      setPaymentForm({ sessions: '1', payment_method: 'cash', reason: '' });
+                      setPaymentError(null);
+                      setShowPayment(true);
+                    }}>支付</Button>
                   </div>
                 </div>
               ))}
@@ -508,47 +570,34 @@ const ClientDetailPage = () => {
         </div>
       </Modal>
 
-      {/* ✂️ 手動扣減 Modal */}
+      {/* 💳 支付 Modal */}
       <Modal
-        show={showManualDeduct}
-        onClose={() => setShowManualDeduct(false)}
-        title="✂️ 手動扣減療程"
+        show={showPayment}
+        onClose={() => setShowPayment(false)}
+        title="💳 療程支付"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setShowManualDeduct(false)}>取消</Button>
-            <Button variant="primary" loading={manualDeducting} onClick={async () => {
-              if (!manualDeductForm.reason.trim()) { setManualDeductError('請填寫扣減原因'); return; }
-              setManualDeducting(true);
-              setManualDeductError(null);
-              const { error } = await supabase.rpc('deduct_service_from_appointment', {
-                p_appointment_id: null,
-                p_service_ids: [manualDeductTarget.id],
-                p_payment_method: manualDeductForm.payment_method,
-                p_amount: parseFloat(manualDeductForm.sessions) * (manualDeductTarget.unit_price || 0) || null,
-              });
-              if (error) { setManualDeductError(error.message); }
-              else { setShowManualDeduct(false); fetchData(); }
-              setManualDeducting(false);
-            }}>確認扣減 {manualDeductForm.sessions} 次</Button>
+            <Button variant="secondary" onClick={() => setShowPayment(false)}>取消</Button>
+            <Button variant="primary" loading={paying} onClick={handlePayment}>確認支付 {paymentForm.sessions} 次</Button>
           </>
         }
       >
         <div className="space-y-4">
-          {manualDeductError && <Alert color="failure">{manualDeductError}</Alert>}
-          {manualDeductTarget && (
+          {paymentError && <Alert color="failure">{paymentError}</Alert>}
+          {paymentTarget && (
             <div className="bg-bg p-4 rounded-xl text-sm space-y-1">
-              <p>療程：<b>{manualDeductTarget.treatments?.name}</b></p>
-              <p>剩餘次數：{manualDeductTarget.remaining_sessions} / {manualDeductTarget.total_sessions}</p>
+              <p>療程：<b>{paymentTarget.treatments?.name}</b></p>
+              <p>剩餘次數：{paymentTarget.remaining_sessions} / {paymentTarget.total_sessions}</p>
             </div>
           )}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">扣減次數</label>
-              <TextInput type="number" min="1" value={manualDeductForm.sessions} onChange={(e) => setManualDeductForm({...manualDeductForm, sessions: e.target.value})} />
+              <label className="block text-sm font-medium mb-2">支付次數</label>
+              <TextInput type="number" min="1" value={paymentForm.sessions} onChange={(e) => setPaymentForm({...paymentForm, sessions: e.target.value})} />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">付款方式</label>
-              <select className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface" value={manualDeductForm.payment_method} onChange={(e) => setManualDeductForm({...manualDeductForm, payment_method: e.target.value})}>
+              <label className="block text-sm font-medium mb-2">付款方式</label>
+              <select className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface" value={paymentForm.payment_method} onChange={(e) => setPaymentForm({...paymentForm, payment_method: e.target.value})}>
                 <option value="cash">💵 現金</option>
                 <option value="card">💳 信用卡</option>
                 <option value="transfer">📱 轉賬</option>
@@ -557,8 +606,8 @@ const ClientDetailPage = () => {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">🔴 扣減原因 (必填)</label>
-            <TextInput placeholder="例：客戶到店消費" value={manualDeductForm.reason} onChange={(e) => setManualDeductForm({...manualDeductForm, reason: e.target.value})} />
+            <label className="block text-sm font-medium mb-2">支付原因 (必填)</label>
+            <TextInput placeholder="例：客戶到店消費" value={paymentForm.reason} onChange={(e) => setPaymentForm({...paymentForm, reason: e.target.value})} />
           </div>
         </div>
       </Modal>
