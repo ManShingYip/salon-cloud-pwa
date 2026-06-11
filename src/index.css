@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #C88EA7;
+  --color-primary-light: #E8D5DA;
+  --color-primary-dark: #9B6B82;
+  --color-bg: #FEFAF6;
+  --color-surface: #FFFFFF;
+  --color-text: #3D2C33;
+  --color-text-muted: #8B7E82;
+  --color-success: #6B9B7D;
+  --color-warning: #D4A574;
+  --color-danger: #D4736A;
+  --color-info: #7B9CB5;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'SF Pro Text', sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; /* 防止 iPad 頻繁觸發選取 */
+}
+
+/* 針對觸控優化捲軸樣式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-primary-light);
+  border-radius: 10px;
+}
+
+/* 防止 Modal 彈出時背景抖動 */
+.modal-open {
+  overflow: hidden;
+}

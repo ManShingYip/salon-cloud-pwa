@@ -1,0 +1,101 @@
+table_name,column_name,data_type,is_nullable
+_system_heartbeat,id,integer,NO
+_system_heartbeat,last_heartbeat,timestamp with time zone,NO
+activity_log,id,uuid,NO
+activity_log,user_id,uuid,NO
+activity_log,action_type,text,NO
+activity_log,target_type,text,NO
+activity_log,target_id,uuid,YES
+activity_log,details,jsonb,NO
+activity_log,ip_address,inet,YES
+activity_log,created_at,timestamp with time zone,NO
+appointments,id,uuid,NO
+appointments,client_id,uuid,NO
+appointments,staff_id,uuid,NO
+appointments,treatment_id,uuid,NO
+appointments,room_id,uuid,NO
+appointments,equipment_id,uuid,YES
+appointments,appointment_date,date,NO
+appointments,start_time,time without time zone,NO
+appointments,end_time,time without time zone,NO
+appointments,status,text,NO
+appointments,no_show_count,integer,NO
+appointments,remarks,text,YES
+appointments,created_by,uuid,NO
+appointments,created_at,timestamp with time zone,NO
+appointments,updated_at,timestamp with time zone,NO
+businesses,id,uuid,NO
+businesses,name,text,NO
+businesses,address,text,YES
+businesses,phone,text,YES
+businesses,created_at,timestamp with time zone,NO
+client_services,id,uuid,NO
+client_services,client_id,uuid,NO
+client_services,treatment_id,uuid,NO
+client_services,total_sessions,integer,NO
+client_services,remaining_sessions,integer,NO
+client_services,purchase_date,date,NO
+client_services,expiry_date,date,YES
+client_services,unit_price,numeric,NO
+client_services,status,text,NO
+client_services,created_at,timestamp with time zone,NO
+client_services,updated_at,timestamp with time zone,NO
+clients,id,uuid,NO
+clients,business_id,uuid,NO
+clients,name,text,NO
+clients,phone,text,NO
+clients,member_id,text,YES
+clients,source,text,YES
+clients,is_sensitive,boolean,NO
+clients,sensitive_note,text,YES
+clients,remarks,text,YES
+clients,last_visit_date,date,YES
+clients,created_at,timestamp with time zone,NO
+clients,updated_at,timestamp with time zone,NO
+daily_settlements,id,uuid,NO
+daily_settlements,business_id,uuid,NO
+daily_settlements,settlement_date,date,NO
+daily_settlements,total_amount,numeric,NO
+daily_settlements,cash_amount,numeric,NO
+daily_settlements,card_amount,numeric,NO
+daily_settlements,transfer_amount,numeric,NO
+daily_settlements,other_amount,numeric,NO
+daily_settlements,cash_difference,numeric,NO
+daily_settlements,difference_note,text,YES
+daily_settlements,status,text,NO
+daily_settlements,locked_by,uuid,YES
+daily_settlements,locked_at,timestamp with time zone,YES
+daily_settlements,created_at,timestamp with time zone,NO
+dormant_clients,id,uuid,YES
+dormant_clients,name,text,YES
+dormant_clients,phone,text,YES
+dormant_clients,member_id,text,YES
+dormant_clients,last_visit_date,date,YES
+dormant_clients,dormant_days,integer,YES
+equipment,id,uuid,NO
+equipment,business_id,uuid,NO
+equipment,name,text,NO
+equipment,total_quantity,integer,NO
+equipment,is_active,boolean,NO
+payment_transactions,id,uuid,NO
+payment_transactions,appointment_id,uuid,YES
+payment_transactions,client_id,uuid,NO
+payment_transactions,treatment_id,uuid,NO
+payment_transactions,staff_id,uuid,NO
+payment_transactions,amount,numeric,NO
+payment_transactions,payment_method,text,NO
+payment_transactions,transaction_date,date,NO
+payment_transactions,settled_by,uuid,NO
+payment_transactions,settlement_id,uuid,YES
+payment_transactions,remarks,text,YES
+payment_transactions,created_at,timestamp with time zone,NO
+profiles,id,uuid,NO
+profiles,business_id,uuid,NO
+profiles,role,text,NO
+profiles,name,text,NO
+profiles,phone,text,YES
+profiles,is_active,boolean,NO
+profiles,created_at,timestamp with time zone,NO
+profiles,updated_at,timestamp with time zone,NO
+refunds,id,uuid,NO
+refunds,client_service_id,uuid,NO
