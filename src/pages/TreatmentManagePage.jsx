@@ -11,6 +11,7 @@ import {
   PlusIcon,
   PencilIcon,
   TrashIcon,
+  ArrowUturnLeftIcon,
   SparklesIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
@@ -145,11 +146,7 @@ const TreatmentManagePage = () => {
   const handleDelete = async () => {
     const deps = deleteDeps;
     if (!deps) return;
-
-    // 🔴 層級三：有活躍套票 → 封鎖
-    if (deps.activeServices > 0) {
-      return; // 不應到達這裡（UI 已封鎖）
-    }
+    if (deps.activeServices > 0) return;
 
     // 🟢 層級一：完全無使用紀錄 → 硬刪除
     if (deps.totalAppointments === 0 && deps.totalTransactions === 0) {
@@ -164,12 +161,16 @@ const TreatmentManagePage = () => {
     fetchTreatments();
   };
 
-  // 判斷層級（用於列表按鈕狀態）
-  const getDeleteLevel = (t) => {
-    // 在列表層級我們不逐個查，改用簡化版：
-    // is_active = false 的顯示「已停用」，is_active = true 的顯示垃圾桶
-    // 詳細檢查在點擊時才做
-    return t.is_active ? 'enabled' : 'disabled';
+  // 🟢 恢復已停用的療程
+  const handleRestore = async (t) => {
+    await supabase.from('treatments').update({ is_active: true }).eq('id', t.id);
+    fetchTreatments();
+  };
+
+  // 判斷狀態等級
+  const getStatus = (t) => {
+    if (!t.is_active) return 'disabled'; // 已停用
+    return 'active'; // 正常
   };
 
   // 根據層級產生 Modal 內容
@@ -298,10 +299,10 @@ const TreatmentManagePage = () => {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {treatments.map(t => {
-                const level = getDeleteLevel(t);
-                const isDisabled = level === 'disabled';
+                const status = getStatus(t);
+                const isDisabled = status === 'disabled';
                 return (
-                  <tr key={t.id} className={isDisabled ? 'opacity-50' : ''}>
+                  <tr key={t.id} className={isDisabled ? 'opacity-60' : ''}>
                     <td className="px-6 py-4 font-bold text-text">
                       <div className="flex items-center gap-2">
                         <SparklesIcon className="w-5 h-5 text-primary" />
@@ -311,16 +312,26 @@ const TreatmentManagePage = () => {
                     <td className="px-6 py-4">{t.duration_minutes || 60} 分鐘</td>
                     <td className="px-6 py-4 text-primary font-bold">HK${(t.single_price || 0).toLocaleString()}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium ${t.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                        {t.is_active ? '啟用中' : '已停用'}
-                      </span>
+                      {isDisabled ? (
+                        <span className="inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium bg-gray-100 text-gray-500">已停用</span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium bg-green-100 text-green-700">啟用中</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button onClick={() => handleEdit(t)} className="p-2 text-info hover:bg-blue-50 rounded-lg transition-colors" title="編輯療程">
                           <PencilIcon className="w-5 h-5" />
                         </button>
-                        {!isDisabled && (
+                        {isDisabled ? (
+                          <button
+                            onClick={() => handleRestore(t)}
+                            className="p-2 text-success hover:bg-green-50 rounded-lg transition-colors"
+                            title="恢復啟用"
+                          >
+                            <ArrowUturnLeftIcon className="w-5 h-5" />
+                          </button>
+                        ) : (
                           <button
                             onClick={() => checkDependencies(t)}
                             className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors"
