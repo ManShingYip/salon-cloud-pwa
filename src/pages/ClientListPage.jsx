@@ -1,10 +1,11 @@
 /**
  * 客戶列表頁面
  * 搜尋 + 列表 + 電話後四碼 + 會員編號 + 來源標籤 + 敏感標記
+ * 使用原生 <table> 避免 Flowbite Table 底層 shadow div 遮蔽內容
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, TextInput, Spinner } from 'flowbite-react';
+import { TextInput, Spinner } from 'flowbite-react';
 import {
   MagnifyingGlassIcon,
   PlusIcon,
@@ -60,7 +61,8 @@ const ClientListPage = () => {
 
   return (
     <div className="flex flex-col h-full space-y-4">
-      <header className="flex justify-between items-center">
+      {/* 頂部標題列 */}
+      <header className="flex justify-between items-center shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-text">👥 客戶管理</h1>
           <p className="text-text-muted text-sm mt-1">
@@ -73,7 +75,7 @@ const ClientListPage = () => {
       </header>
 
       {/* 搜尋欄 */}
-      <div className="relative">
+      <div className="relative shrink-0">
         <MagnifyingGlassIcon className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
         <TextInput
           placeholder="搜尋客戶姓名或電話..."
@@ -83,47 +85,49 @@ const ClientListPage = () => {
         />
       </div>
 
-      {/* 客戶列表 */}
-      <div className="flex-1 bg-surface rounded-2xl shadow-card flex flex-col min-h-0 overflow-hidden border border-gray-100">
+      {/* 客戶列表 — 原生 <table>，無 Flowbite 隱藏陰影 div */}
+      <div className="flex-1 min-h-0 rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden flex flex-col">
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : clients.length > 0 ? (
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <Table hoverable>
-              <Table.Head className="bg-bg sticky top-0 z-10">
-                <Table.HeadCell>客戶姓名</Table.HeadCell>
-                <Table.HeadCell>電話後四碼</Table.HeadCell>
-                <Table.HeadCell>會員編號</Table.HeadCell>
-                <Table.HeadCell>來源</Table.HeadCell>
-                <Table.HeadCell>狀態</Table.HeadCell>
-                <Table.HeadCell>最後到訪</Table.HeadCell>
-                <Table.HeadCell className="w-16"></Table.HeadCell>
-              </Table.Head>
-              <Table.Body className="divide-y">
+          <div className="overflow-auto flex-1">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
+                  <th className="px-6 py-4 font-bold">客戶姓名</th>
+                  <th className="px-6 py-4 font-bold">電話後四碼</th>
+                  <th className="px-6 py-4 font-bold">會員編號</th>
+                  <th className="px-6 py-4 font-bold">來源</th>
+                  <th className="px-6 py-4 font-bold">狀態</th>
+                  <th className="px-6 py-4 font-bold">最後到訪</th>
+                  <th className="px-6 py-4 w-16"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
                 {clients.map(c => (
-                  <Table.Row
+                  <tr
                     key={c.id}
-                    className="cursor-pointer min-h-[56px] active:bg-gray-50"
+                    className="hover:bg-gray-50 cursor-pointer transition-colors"
                     onClick={() => navigate(`/clients/${c.id}`)}
                   >
-                    <Table.Cell className="font-bold">
+                    <td className="px-6 py-4 font-bold">
                       <span className="flex items-center gap-2">
                         {c.name}
                         {c.is_sensitive && (
                           <ExclamationTriangleIcon className="w-5 h-5 text-danger inline" title="特殊敏感客戶" />
                         )}
                       </span>
-                    </Table.Cell>
-                    <Table.Cell className="text-text-muted font-mono">
+                    </td>
+                    <td className="px-6 py-4 text-text-muted font-mono">
                       ****{String(c.phone || '').slice(-4) || '----'}
-                    </Table.Cell>
-                    <Table.Cell className="font-mono text-primary font-bold">
+                    </td>
+                    <td className="px-6 py-4 font-mono text-primary font-bold">
                       {c.member_id || '-'}
-                    </Table.Cell>
-                    <Table.Cell>
+                    </td>
+                    <td className="px-6 py-4">
                       {getSourceTag(c.source)}
-                    </Table.Cell>
-                    <Table.Cell>
+                    </td>
+                    <td className="px-6 py-4">
                       {c.is_sensitive ? (
                         <Tag color="amber">⚠️ 特殊敏感</Tag>
                       ) : c.last_visit_date ? (
@@ -131,22 +135,24 @@ const ClientListPage = () => {
                       ) : (
                         <Tag color="gray">新客戶</Tag>
                       )}
-                    </Table.Cell>
-                    <Table.Cell className="text-sm text-text-muted">
+                    </td>
+                    <td className="px-6 py-4 text-sm text-text-muted">
                       {c.last_visit_date || '尚未到訪'}
-                    </Table.Cell>
-                    <Table.Cell>
+                    </td>
+                    <td className="px-6 py-4">
                       <ChevronRightIcon className="w-5 h-5 text-text-muted" />
-                    </Table.Cell>
-                  </Table.Row>
+                    </td>
+                  </tr>
                 ))}
-              </Table.Body>
-            </Table>
+              </tbody>
+            </table>
           </div>
         ) : (
-          <div className="text-center py-20 text-text-muted">
-            <p className="text-lg">暫無客戶資料</p>
-            <p className="text-sm mt-2">點擊右上角「新增客戶」開始建立客戶名單</p>
+          <div className="flex items-center justify-center flex-1 text-center text-text-muted">
+            <div>
+              <p className="text-lg">暫無客戶資料</p>
+              <p className="text-sm mt-2">點擊右上角「新增客戶」開始建立客戶名單</p>
+            </div>
           </div>
         )}
       </div>
