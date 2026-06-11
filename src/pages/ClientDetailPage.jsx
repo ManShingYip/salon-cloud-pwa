@@ -208,52 +208,6 @@ const ClientDetailPage = () => {
     setPurchasing(false);
   };
 
-  // 💳 執行支付（直接 DB 操作，不經 RPC）
-  const handlePayment = async () => {
-    if (!paymentForm.reason.trim()) { setPaymentError('請填寫支付原因'); return; }
-    setPaying(true);
-    setPaymentError(null);
-
-    try {
-      const sessionsToDeduct = parseInt(paymentForm.sessions) || 1;
-      const target = paymentTarget;
-
-      // 1. 支付療程次數
-      const newRemaining = target.remaining_sessions - sessionsToDeduct;
-      const { error: updateError } = await supabase
-        .from('client_services')
-        .update({
-          remaining_sessions: newRemaining,
-          status: newRemaining <= 0 ? 'expired' : 'active',
-        })
-        .eq('id', target.id)
-        .gt('remaining_sessions', 0);
-
-      if (updateError) throw updateError;
-
-      // 2. 建立支付交易紀錄
-      const amount = parseFloat(paymentForm.sessions) * (target.unit_price || 0) || null;
-      const { error: txError } = await supabase
-        .from('payment_transactions')
-        .insert({
-          client_id: id,
-          treatment_id: target.treatment_id,
-          amount: amount,
-          payment_method: paymentForm.payment_method,
-          transaction_date: new Date().toISOString().split('T')[0],
-          remarks: paymentForm.reason.trim(),
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-        });
-
-      if (txError) throw txError;
-
-      setShowPayment(false);
-      fetchData();
-    } catch (err) {
-      setPaymentError(err.message || '支付失敗');
-    }
-    setPaying(false);
-  };
   if (loading) return <div className="flex justify-center p-20"><Spinner size="xl" /></div>;
   if (error) return <Alert color="failure">{error}</Alert>;
   if (!client) return <Alert color="failure">找不到該客戶資料</Alert>;
