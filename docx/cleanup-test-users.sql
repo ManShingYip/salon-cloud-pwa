@@ -1,1 +1,2 @@
-DELETE FROM profiles WHERE name IN ('新員工Test', '新美容師Cindy');
+DELETE FROM profiles WHERE id = '613b8630-3c29-4366-9b15-67f504fea5e5';
+DELETE FROM profiles WHERE id = '032c0c4b-e135-40e4-aa34-307b8300650a';
