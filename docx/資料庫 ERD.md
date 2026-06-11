@@ -171,9 +171,9 @@ package "📅 預約管理 (三維防撞)" as BookingModule #F0F7F4 {
 }
 
 ' ============================================================
-' 金流 / 結算模組
+' 金流模組
 ' ============================================================
-package "💰 結算與金流" as MoneyModule #F9FFF5 {
+package "💰 金流" as MoneyModule #F9FFF5 {
 
   entity "payment_transactions\n(交易紀錄)" as payment_transactions #FFFFFF {
     * id : UUID <<PK>>
@@ -191,7 +191,7 @@ package "💰 結算與金流" as MoneyModule #F9FFF5 {
     created_at : TIMESTAMPTZ
   }
 
-  entity "daily_settlements\n(每日結算)" as daily_settlements #FFFFFF {
+  entity "daily_settlements\n(收入紀錄)" as daily_settlements #FFFFFF {
     * id : UUID <<PK>>
     --
     * business_id : UUID <<FK→businesses>>
@@ -231,7 +231,7 @@ package "📋 活動日誌 (INSERT-ONLY)" as LogModule #FFF0F0 {
     * id : UUID <<PK>>
     --
     user_id : UUID <<FK→profiles>>
-    action_type : TEXT <<"deduct | refund | create | update | cancel | settle | …">>
+    action_type : TEXT <<"collect_payment | refund | create | update | cancel | …">>
     target_type : TEXT <<"appointment | client | service | settlement">>
     target_id : UUID
     details : JSONB <<"變動前後資料對照">>

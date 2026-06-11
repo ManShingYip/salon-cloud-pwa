@@ -168,9 +168,9 @@ package "📅 預約管理 (三維防撞)" as BookingModule #F0F7F4 {
 }
 
 ' ============================================================
-' 金流 / 結算模組
+' 金流模組
 ' ============================================================
-package "💰 結算與金流" as MoneyModule #F9FFF5 {
+package "💰 金流" as MoneyModule #F9FFF5 {
 
   entity "payment_transactions\n(交易紀錄)" as payment_transactions #ENTITY_BG {
     * id : UUID <<PK>>
@@ -188,7 +188,7 @@ package "💰 結算與金流" as MoneyModule #F9FFF5 {
     created_at : TIMESTAMPTZ
   }
 
-  entity "daily_settlements\n(每日結算)" as daily_settlements #ENTITY_BG {
+  entity "daily_settlements\n(收入紀錄)" as daily_settlements #ENTITY_BG {
     * id : UUID <<PK>>
     --
     * business_id : UUID <<FK→businesses>>
@@ -228,8 +228,8 @@ package "📋 活動日誌 (INSERT-ONLY)" as LogModule #FFF0F0 {
     * id : UUID <<PK>>
     --
     user_id : UUID <<FK→profiles>>
-    action_type : TEXT <<"deduct | refund | create | update | cancel | settle | …">>
-    target_type : TEXT <<"appointment | client | service | settlement">>
+    action_type : TEXT <<"collect_payment | refund | create | update | cancel | settle | …">>
+    target_type : TEXT <<"appointment | client | client_service | settlement">>
     target_id : UUID
     details : JSONB <<"變動前後資料對照">>
     ip_address : INET
@@ -263,7 +263,7 @@ clients ||--o{ payment_transactions : "付款"
 businesses ||--o{ treatments : "提供"
 treatments ||--o{ client_services : "被購買"
 treatments ||--o{ appointments : "被預約"
-treatments ||--o{ payment_transactions : "被結算"
+treatments ||--o{ payment_transactions : "產生交易"
 
 ' 資源
 businesses ||--o{ rooms : "擁有"
@@ -271,12 +271,9 @@ businesses ||--o{ equipment : "擁有"
 rooms ||--o{ appointments : "佔用"
 equipment ||--o{ appointments : "佔用"
 
-' 結算
-profiles ||--o{ payment_transactions : "結算 (settled_by)"
+' 金流關係
+profiles ||--o{ payment_transactions : "經手 (settled_by)"
 appointments ||--o{ payment_transactions : "產生"
-profiles ||--o{ daily_settlements : "鎖定 (locked_by)"
-businesses ||--o{ daily_settlements : "結算"
-payment_transactions }o--|| daily_settlements : "歸屬 (settlement_id)"
 
 ' 退款
 profiles ||--o{ refunds : "執行 (refunded_by)"
@@ -309,12 +306,10 @@ note right of activity_log
 end note
 
 note right of client_services
-  <b>🔒 扣數防弊</b>
+  <b>🔒 庫存消耗防弊</b>
   • 前端不可直接 UPDATE
     remaining_sessions
-  • 只能透過 RPC
-    deduct_service()
-    在 Transaction 中扣減
+  • 必須透過收錢/消耗動作
   • 同時寫入 activity_log
 end note
 

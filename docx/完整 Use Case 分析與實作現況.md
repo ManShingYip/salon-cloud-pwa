@@ -48,7 +48,7 @@
 | UC_BK_01 | 建立預約 | ✅ NewAppointmentPage 三步驟表單 | ✅ appointments INSERT | ✅ 完成 |
 | UC_BK_02 | 修改預約 | ✅ EditAppointmentPage（時間/美容師/房間）| ✅ appointments UPDATE | ✅ 完成 |
 | UC_BK_03 | 取消預約 | ✅ DailyAppointmentsPage「取消」按鈕 | ✅ status='cancelled' | ✅ 完成 |
-| UC_BK_04 | 改為「已出席」| ✅ 點擊「扣數」按鈕 → DeductionModal | ✅ deduct RPC | ✅ 完成 |
+| UC_BK_04 | 改為「已出席」| ✅ 點擊「收錢」→ PaymentModal | ✅ consume RPC | ✅ 完成 |
 | UC_BK_05 | 改為「失約」| 🔴 無獨立按鈕 | 🔴 只能手動改 status | 🔴 低優先 |
 | UC_BK_06 | 今日預約總覽 | ✅ DailyAppointmentsPage（日曆+時間線+統計） | ✅ | ✅ 完成 |
 | UC_BK_07 | 三維防撞檢查 | ✅ checkConflicts() 即時顯示 | ✅ check_appointment_conflict() | ✅ 完成 |
@@ -56,35 +56,34 @@
 | UC_BK_09 | 員工排班設定 | ✅ StaffSchedulePage 7 天網格編輯 | ✅ staff_schedules 表 | ✅ 完成 |
 | UC_BK_10 | 非辦公時段隱藏 | 🔴 無 | 🔴 | 🔴 日後再加 |
 
-### ✂️ 扣數與防呆
+### 💳 收錢與消耗次數
 
 | # | Use Case | 前端 | API/SQL | 狀態 |
 |---|----------|------|---------|------|
-| UC_DED_01 | 自動彈出扣數確認單 | ✅ handleStatusChange() | ✅ | ✅ 完成 |
-| UC_DED_02 | 手動勾選扣減項目 | ✅ DeductionModal Checkbox | ✅ | ✅ 完成 |
-| UC_DED_03 | 禁全自動盲目扣減 | ✅ 多選 + 員工手選確認 | ✅ RPC 強制檢查 | ✅ 完成 |
+| UC_DED_01 | 自動彈出收錢確認單 | ✅ handleStatusChange() → PaymentModal | ✅ | ✅ 完成 |
+| UC_DED_02 | 手動勾選消耗項目 | ✅ PaymentModal Checkbox | ✅ | ✅ 完成 |
+| UC_DED_03 | 禁全自動盲目消耗 | ✅ 多選 + 員工手選確認 | ✅ RPC 強制檢查 | ✅ 完成 |
 | UC_DED_04 | 一次勾選多個 | ✅ Checkbox 多選 | ✅ p_service_ids[] | ✅ 完成 |
-| UC_DED_05 | Transaction 原子扣數 | ✅ | ✅ deduct_service_from_appointment | ✅ 完成 |
+| UC_DED_05 | Transaction 原子操作 | ✅ | ✅ deduct_service_from_appointment | ✅ 完成 |
 
-### 💰 每日結算
+### 💰 收入紀錄
 
 | # | Use Case | 前端 | API/SQL | 狀態 |
 |---|----------|------|---------|------|
-| UC_STL_01 | 當日收入總覽 | ✅ DailySettlementPage | ✅ | ✅ 完成 |
-| UC_STL_02 | 支付方式分類 | ✅ 現金/信用卡/轉賬卡片 | ✅ | ✅ 完成 |
-| UC_STL_03 | 備註差異輸入 | ✅ Textarea | ✅ | ✅ 完成 |
-| UC_STL_04 | 鎖定結算二次確認 | ✅ 二次確認 Modal | ✅ close_daily_settlement() | ✅ 完成 |
+| UC_STL_01 | 收入總覽 | ✅ DailySettlementPage | ✅ | ✅ 完成 |
+| UC_STL_02 | 收款方式分類 | ✅ 現金/信用卡/轉賬/其他卡片 | ✅ | ✅ 完成 |
+| UC_STL_03 | 備註輸入 | ✅ Textarea | ✅ | ✅ 完成 |
+| UC_STL_04 | 收入展示（非鎖定）| ✅ 純展示 | ✅ | ✅ 完成 |
 | UC_STL_05 | 交易明細 | ✅ Table | ✅ | ✅ 完成 |
 
 ### 🔄 退款與過期
 
 | # | Use Case | 前端 | API/SQL | 狀態 |
 |---|----------|------|---------|------|
-| UC_REF_01 | 退款 (回補次數) | ✅ ClientDetailPage 退款 Modal | ✅ refund_deduction() | ✅ 完成 |
+| UC_REF_01 | 退款 (回補次數) | ✅ ClientDetailPage 退款 Modal（含退款方式）| ✅ refund_deduction() | ✅ 完成 |
 | UC_REF_02 | 套票過期處理 | 🔴 無獨立 UI（RPC 自動標記 expired） | 🟡 client_services.status='expired' | 🟡 自動化，日後可加強 |
 | UC_REF_03 | 退款原因必填 | ✅ Modal 內 reason TextInput 必填 | ✅ reason NOT NULL | ✅ 完成 |
-| UC_REF_04 | 自動扣減當日收入 | 🟡 refund 寫入 refunds 表 | ✅ refund_deduction() 內寫 Log | 🟡 部分（不直接影響 settlement） |
-| UC_REF_05 | 不可刪改 Log | ✅ activity_log INSERT-ONLY | ✅ RLS 無 UPDATE/DELETE | ✅ 完成 |
+| UC_REF_04 | 退款方式記錄 | ✅ 退款方式下拉（現金/信用卡/轉賬/其他）| ✅ refunds.refund_method | ✅ 完成 |
 
 ### 📋 系統日誌
 
@@ -123,8 +122,8 @@
 
 | 狀態 | 數量 | 說明 |
 |------|------|------|
-| ✅ 完成 | 42 | 登入、客戶 CRUD、療程 CRUD、預約全流程、扣數、退款、結算、日誌、沉睡客、排班、匯出、三方防撞、安全三修 |
-| 🟡 部分 | 4 | 失約獨立按鈕、非辦公時段、套票過期手動 UI、退款不直接連結算 |
+| ✅ 完成 | 42 | 登入、客戶 CRUD、療程 CRUD、預約全流程、收錢、退款、收入紀錄、日誌、沉睡客、排班、匯出、三方防撞、安全三修 |
+| 🟡 部分 | 3 | 失約獨立按鈕、非辦公時段、套票過期手動 UI |
 | 🔴 未實作 | 4 | 店長設定員工角色 UI、刪除客戶 UI、UC_BK_05 失約獨立按鈕、UC_BK_10 排班時段過濾 |
 
 ---
@@ -134,7 +133,7 @@
 | 原則 | 達成 | 說明 |
 |------|------|------|
 | 零成本 | ✅ | Vercel Free + Supabase Free + GitHub Free，每月 HK$0 |
-| 防員工走漏洞 | ✅ | INSERT-ONLY Log、RLS、SECURITY DEFINER RPC 內權限檢查、結算鎖定、冪等防連擊 |
+| 防員工走漏洞 | ✅ | INSERT-ONLY Log、RLS、SECURITY DEFINER RPC 內權限檢查、消費冪等防連擊 |
 | iPad 可用性 | ✅ | Tailwind 響應式、48px 最小點擊區、PWA manifest + icon |
 
 ---
@@ -153,10 +152,9 @@
 
 | 修復 | RPC | 說明 |
 |------|-----|------|
-| 🔴 漏洞一 | deduct_service_from_appointment | 結算鎖定後禁止扣數 |
-| 🔴 漏洞一 | revert_attended_to_confirmed | 結算鎖定後禁止退回 |
-| 🔴 漏洞二 | revert_attended_to_confirmed | FOR UPDATE + 狀態檢查防連擊 |
-| 🔴 漏洞三 | DeductionModal | 停用療程顯示 (已停用) 標示 |
+| 🔴 漏洞一 | deduct_service_from_appointment | 消費前檢查 expiry + remaining |
+| 🔴 漏洞一 | revert_attended_to_confirmed | FOR UPDATE 防連擊 |
+| 🔴 漏洞三 | PaymentModal | 停用療程顯示 (已停用) 標示 |
 
 ---
 
