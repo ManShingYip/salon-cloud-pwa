@@ -1,6 +1,6 @@
 /**
- * 店長儀表板 — 六大區塊總覽
- * ① 今日實況 ② 今日收入 ③ 客戶活躍 ④ 療程熱度 ⑤ 員工表現 ⑥ 異常提示
+ * 店長儀表板 v2 — 緩存模式
+ * ① 今日實況 ② 緩存概覽+確定收入 ③ 客戶活躍 ④ 療程熱度 ⑤ 員工表現 ⑥ 異常提示
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -56,6 +56,8 @@ const DashboardPage = () => {
       { data: staffStats },
       { data: expiringServices },
       { data: noShowClients },
+      { data: bufferServices },
+      { data: confirmedServices },
     ] = await Promise.all([
       safeQuery(() => supabase.from('appointments').select('status').eq('appointment_date', today)),
       safeQuery(() => supabase.from('payment_transactions').select('amount, payment_method, remarks').eq('transaction_date', today)),
@@ -66,6 +68,9 @@ const DashboardPage = () => {
       safeQuery(() => supabase.from('appointments').select('staff_id, profiles(name)').eq('status', 'attended').gte('appointment_date', firstOfMonth)),
       safeQuery(() => supabase.from('client_services').select('*, clients(name), treatments(name)').eq('status', 'active').gte('expiry_date', today).lte('expiry_date', new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]).limit(10)),
       safeQuery(() => supabase.from('clients').select('id, name').not('last_visit_date', 'is', null).order('last_visit_date', { ascending: true }).limit(20)),
+      // 緩存與確定收入（整月）
+      safeQuery(() => supabase.from('client_services').select('*, clients(name), treatments(name)').eq('status', 'active').order('purchase_date', { ascending: false })),
+      safeQuery(() => supabase.from('payment_transactions').select('client_id, treatment_id, amount, remarks').gte('transaction_date', firstOfMonth)),
     ]);
 
     // 彙總計算
@@ -87,6 +92,28 @@ const DashboardPage = () => {
       else if (p.payment_method === 'transfer') revenue.transfer += amt;
       else revenue.other += amt;
       if (p.remarks?.includes('VOID')) revenue.voidCount++;
+    });
+
+    // 緩存與確定收入計算
+    const paidByService = {};
+    confirmedServices?.forEach(p => {
+      if (p.remarks?.includes('VOID')) return;
+      const key = `${p.client_id}:${p.treatment_id}`;
+      paidByService[key] = (paidByService[key] || 0) + parseFloat(p.amount || 0);
+    });
+
+    let bufferCount = 0, bufferPending = 0, confirmedCount = 0, confirmedEarned = 0;
+    bufferServices?.forEach(cs => {
+      if (cs.status === 'refunded') return;
+      const totalPrice = parseFloat(cs.unit_price || 0) * (cs.total_sessions || 0);
+      const paid = paidByService[`${cs.client_id}:${cs.treatment_id}`] || 0;
+      if (cs.remaining_sessions === 0 && paid >= totalPrice) {
+        confirmedCount++;
+        confirmedEarned += paid;
+      } else {
+        bufferCount++;
+        bufferPending += (totalPrice - paid);
+      }
     });
 
     // 療程熱度排名
@@ -114,6 +141,7 @@ const DashboardPage = () => {
       newClientCount: newClientCount?.count || 0,
       expiringServices: expiringServices || [],
       noShowClients: noShowClients || [],
+      bufferCount, bufferPending, confirmedCount, confirmedEarned,
     });
     setLoading(false);
   };
@@ -162,22 +190,46 @@ const DashboardPage = () => {
           </div>
         </Card>
 
-        {/* ② 今日收入 */}
-        <Card className="p-2">
+        {/* ② 緩存概覽 + 確定收入 */}
+        <Card className="p-2 cursor-pointer" onClick={() => navigate('/settlement')}>
           <h3 className="font-bold flex items-center gap-2 mb-4">
-            <CurrencyDollarIcon className="w-5 h-5 text-primary" /> 今日收入
+            <CurrencyDollarIcon className="w-5 h-5 text-primary" /> 收入總覽（本月）
           </h3>
-          <div className="text-center mb-4">
-            <span className="text-3xl font-black text-primary">HK${d.revenue.total.toLocaleString()}</span>
+          <div className="space-y-3">
+            {/* 🟡 緩存中 */}
+            <div className="flex justify-between items-center p-3 bg-amber-50 rounded-xl">
+              <div>
+                <span className="text-sm font-bold text-warning">🟡 緩存中</span>
+                <span className="text-xs text-text-muted ml-2">未收足 / 未做完</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-black text-warning">{d.bufferCount}</span>
+                <span className="text-xs text-text-muted ml-1">筆</span>
+                {d.bufferPending > 0 && (
+                  <span className="text-sm font-bold text-warning ml-2">HK${d.bufferPending.toLocaleString()}</span>
+                )}
+              </div>
+            </div>
+            {/* 🟢 確定收入 */}
+            <div className="flex justify-between items-center p-3 bg-emerald-50 rounded-xl">
+              <div>
+                <span className="text-sm font-bold text-success">🟢 確定收入</span>
+                <span className="text-xs text-text-muted ml-2">已收足 + 已做完</span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-black text-success">{d.confirmedCount}</span>
+                <span className="text-xs text-text-muted ml-1">筆</span>
+                {d.confirmedEarned > 0 && (
+                  <span className="text-sm font-bold text-success ml-2">HK${d.confirmedEarned.toLocaleString()}</span>
+                )}
+              </div>
+            </div>
+            {/* 今日收款速覽 */}
+            <div className="text-xs text-text-muted text-center">
+              今日收款 HK${d.revenue.total.toLocaleString()}
+              {d.revenue.voidCount > 0 && <span className="text-warning ml-1">(含 {d.revenue.voidCount} VOID)</span>}
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-sm">
-            <div className="bg-bg p-2 rounded-xl"><span className="text-text-muted block">💵 現金</span><b>${d.revenue.cash.toLocaleString()}</b></div>
-            <div className="bg-bg p-2 rounded-xl"><span className="text-text-muted block">💳 信用卡</span><b>${d.revenue.card.toLocaleString()}</b></div>
-            <div className="bg-bg p-2 rounded-xl"><span className="text-text-muted block">📱 轉賬</span><b>${d.revenue.transfer.toLocaleString()}</b></div>
-          </div>
-          {d.revenue.voidCount > 0 && (
-            <p className="text-xs text-warning text-center mt-3">⚠️ 含 {d.revenue.voidCount} 筆 VOID 退回交易</p>
-          )}
         </Card>
 
         {/* ③ 客戶活躍度 */}
