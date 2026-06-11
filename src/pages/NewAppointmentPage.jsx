@@ -28,8 +28,6 @@ const NewAppointmentPage = () => {
   // 選項資料
   const [treatments, setTreatments] = useState([]);
   const [staff, setStaff] = useState([]);
-  const [rooms, setRooms] = useState([]);
-  const [equipment, setEquipment] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [clients, setClients] = useState([]);
   const [staffAppointments, setStaffAppointments] = useState([]);
@@ -39,8 +37,8 @@ const NewAppointmentPage = () => {
     client_id: '',
     treatment_id: '',
     staff_id: '',
-    room_id: '',
-    equipment_id: '',
+    room_name: '',
+    equipment_name: '',
     appointment_date: new Date().toISOString().split('T')[0],
     start_time: '10:00',
   });
@@ -56,17 +54,13 @@ const NewAppointmentPage = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: tData }, { data: sData }, { data: rData }, { data: eData }, { data: schData }] = await Promise.all([
+      const [{ data: tData }, { data: sData }, { data: schData }] = await Promise.all([
         supabase.from('treatments').select('*').eq('is_active', true),
         supabase.from('profiles').select('*'),
-        supabase.from('rooms').select('*').eq('is_active', true),
-        supabase.from('equipment').select('*').eq('is_active', true),
         supabase.from('staff_schedules').select('*'),
       ]);
       setTreatments(tData || []);
       setStaff(sData || []);
-      setRooms(rData || []);
-      setEquipment(eData || []);
       setSchedules(schData || []);
     };
     load();
@@ -119,10 +113,10 @@ const NewAppointmentPage = () => {
   // ─── 衝突檢查 ─────────────────────────────────
   const checkConflicts = () => {
     setConflictMsg(null);
-    if (!form.appointment_date || !form.start_time || !form.staff_id || !form.room_id) return;
+    if (!form.appointment_date || !form.start_time || !form.staff_id || !form.room_name) return;
     const endTime = getEndTime();
     supabase.from('appointments')
-      .select('staff_id, room_id, equipment_id')
+      .select('staff_id, room_name, equipment_name')
       .eq('appointment_date', form.appointment_date)
       .neq('status', 'cancelled')
       .lt('start_time', endTime)
@@ -131,28 +125,28 @@ const NewAppointmentPage = () => {
         if (!conflicting?.length) return;
         const msgs = [];
         if (conflicting.some(c => c.staff_id === form.staff_id)) msgs.push('美容師');
-        if (form.room_id && conflicting.some(c => c.room_id === form.room_id)) msgs.push('房間');
-        if (form.equipment_id && conflicting.some(c => c.equipment_id === form.equipment_id)) msgs.push('儀器');
+        if (form.room_name && conflicting.some(c => c.room_name === form.room_name)) msgs.push('房間');
+        if (form.equipment_name && conflicting.some(c => c.equipment_name === form.equipment_name)) msgs.push('儀器');
         if (msgs.length) setConflictMsg(`⚠️ ${msgs.join('、')}此時段已有預約`);
       });
   };
 
-  // 選美容師時觸發衝突檢查
+  // 選美容師/房間時觸發衝突檢查
   useEffect(() => {
-    if (form.staff_id && form.room_id) checkConflicts();
-  }, [form.staff_id, form.room_id, form.equipment_id]);
+    if (form.staff_id && form.room_name) checkConflicts();
+  }, [form.staff_id, form.room_name, form.equipment_name]);
 
   // ─── 送出 ─────────────────────────────────────
   const handleSubmit = async () => {
-    if (!form.client_id || !form.treatment_id || !form.staff_id || !form.room_id) return;
+    if (!form.client_id || !form.treatment_id || !form.staff_id || !form.room_name) return;
     setLoading(true);
     const endTime = getEndTime();
     const { error } = await supabase.from('appointments').insert({
       client_id: form.client_id,
       staff_id: form.staff_id,
       treatment_id: form.treatment_id,
-      room_id: form.room_id,
-      equipment_id: form.equipment_id || null,
+      room_name: form.room_name,
+      equipment_name: form.equipment_name || null,
       appointment_date: form.appointment_date,
       start_time: form.start_time,
       end_time: endTime,
@@ -311,25 +305,27 @@ const NewAppointmentPage = () => {
               <p className="text-xs text-text-muted mt-2">根據 {form.appointment_date} {form.start_time} 即時更新</p>
             </Card>
 
-            {/* ④ 房間 + 儀器 */}
+            {/* ④ 房間 + 儀器 — 自由文字輸入 */}
             <Card className="p-2">
               <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
                 <HomeIcon className="w-6 h-6 text-primary" /> 房間與儀器
               </h3>
               <div className="space-y-4">
                 <div>
-                  <Label>房間</Label>
-                  <Select value={form.room_id} onChange={(e) => { setForm({...form, room_id: e.target.value}); }}>
-                    <option value="">選擇房間</option>
-                    {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                  </Select>
+                  <Label>房間 <span className="text-danger">*</span></Label>
+                  <TextInput
+                    placeholder="輸入房間名稱，例：Room A / VIP 房..."
+                    value={form.room_name}
+                    onChange={(e) => setForm({...form, room_name: e.target.value})}
+                  />
                 </div>
                 <div>
                   <Label>儀器 (非必填)</Label>
-                  <Select value={form.equipment_id} onChange={(e) => setForm({...form, equipment_id: e.target.value})}>
-                    <option value="">不選儀器</option>
-                    {equipment.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
-                  </Select>
+                  <TextInput
+                    placeholder="輸入儀器名稱，例：冰點激光儀..."
+                    value={form.equipment_name}
+                    onChange={(e) => setForm({...form, equipment_name: e.target.value})}
+                  />
                 </div>
               </div>
             </Card>
@@ -349,8 +345,8 @@ const NewAppointmentPage = () => {
                   {selectedClient && <p>👤 {selectedClient.name} · {selectedClient.phone}</p>}
                   {selectedTreatment && <p>💆 {selectedTreatment.name} (HK${selectedTreatment.single_price} · {selectedTreatment.duration_minutes}分)</p>}
                   {selectedStaff && <p>👩 {selectedStaff.name}</p>}
-                  {form.room_id && <p>🚪 {rooms.find(r => r.id === form.room_id)?.name}</p>}
-                  {form.equipment_id && <p>🔧 {equipment.find(e => e.id === form.equipment_id)?.name}</p>}
+                  {form.room_name && <p>🚪 {form.room_name}</p>}
+                  {form.equipment_name && <p>🔧 {form.equipment_name}</p>}
                   <p>📅 {form.appointment_date} {form.start_time} - {getEndTime()}</p>
                 </div>
               </Card>
@@ -361,7 +357,7 @@ const NewAppointmentPage = () => {
               variant="primary"
               size="lg"
               className="w-full"
-              disabled={!form.client_id || !form.treatment_id || !form.staff_id || !form.room_id}
+              disabled={!form.client_id || !form.treatment_id || !form.staff_id || !form.room_name}
               loading={loading}
               onClick={handleSubmit}
             >
