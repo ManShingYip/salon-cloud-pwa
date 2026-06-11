@@ -155,7 +155,7 @@ const ActivityLogPage = () => {
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : logs.length > 0 ? (
           <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 z-10">
+              <thead className="sticky top-0 z-0">
                 <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
                   <th className="px-6 py-4 font-bold">時間</th>
                   <th className="px-6 py-4 font-bold">操作類型</th>

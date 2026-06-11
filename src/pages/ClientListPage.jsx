@@ -92,7 +92,7 @@ const ClientListPage = () => {
         ) : clients.length > 0 ? (
           <div className="overflow-auto flex-1">
             <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 z-10">
+              <thead className="sticky top-0 z-0">
                 <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
                   <th className="px-6 py-4 font-bold">客戶姓名</th>
                   <th className="px-6 py-4 font-bold">電話後四碼</th>

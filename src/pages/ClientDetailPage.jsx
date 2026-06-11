@@ -291,7 +291,7 @@ const ClientDetailPage = () => {
             </div>
             <div className="overflow-auto flex-1">
               <table className="w-full text-left text-sm">
-                <thead className="sticky top-0 z-10">
+                <thead className="sticky top-0 z-0">
                   <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
                     <th className="px-6 py-4 font-bold">日期</th>
                     <th className="px-6 py-4 font-bold">療程項目</th>
