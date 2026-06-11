@@ -51,6 +51,15 @@ const ClientDetailPage = () => {
   const [refunding, setRefunding] = useState(false);
   const [refundError, setRefundError] = useState(null);
 
+  // 🗑️ 刪除客戶 + 手動扣減 Modal
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showManualDeduct, setShowManualDeduct] = useState(false);
+  const [manualDeductTarget, setManualDeductTarget] = useState(null);
+  const [manualDeductForm, setManualDeductForm] = useState({ sessions: '1', payment_method: 'cash', reason: '' });
+  const [manualDeducting, setManualDeducting] = useState(false);
+  const [manualDeductError, setManualDeductError] = useState(null);
+
   useEffect(() => {
     fetchData();
   }, [id]);
@@ -157,6 +166,9 @@ const ClientDetailPage = () => {
           });
           setShowEdit(true);
         }}>編輯客戶資料</Button>
+        {isOwner && (
+          <Button variant="danger" onClick={() => setShowDelete(true)}>刪除客戶</Button>
+        )}
       </header>
 
       <div className="flex gap-6 items-start">
@@ -235,17 +247,10 @@ const ClientDetailPage = () => {
                         <>
                           <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
                           <Button variant="secondary" size="md" onClick={() => {
-                            if (!svc) return;
-                            const reason = prompt('請輸入手動扣減原因：');
-                            if (!reason) return;
-                            supabase.rpc('deduct_service_from_appointment', {
-                              p_appointment_id: null,
-                              p_service_ids: [svc.id],
-                              p_payment_method: 'cash',
-                            }).then(({ error }) => {
-                              if (error) alert('扣減失敗: ' + error.message);
-                              else fetchData();
-                            });
+                            setManualDeductTarget(svc);
+                            setManualDeductForm({ sessions: '1', payment_method: 'cash', reason: '' });
+                            setManualDeductError(null);
+                            setShowManualDeduct(true);
                           }}>手動扣減</Button>
                         </>
                       )}
@@ -441,6 +446,90 @@ const ClientDetailPage = () => {
           <div>
             <label className="block text-sm font-medium mb-2">🔴 退款原因 (必填)</label>
             <TextInput placeholder="例：客戶不滿意療程效果，全額退款" value={refundForm.reason} onChange={(e) => setRefundForm({...refundForm, reason: e.target.value})} />
+          </div>
+        </div>
+      </Modal>
+
+      {/* 🗑️ 刪除客戶 Modal */}
+      <Modal
+        show={showDelete}
+        onClose={() => setShowDelete(false)}
+        title="🗑️ 刪除客戶"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowDelete(false)}>取消</Button>
+            <Button variant="danger" loading={deleting} onClick={async () => {
+              setDeleting(true);
+              const { error } = await supabase.from('clients').delete().eq('id', id);
+              if (!error) { setShowDelete(false); navigate('/clients'); }
+              else { alert('刪除失敗: ' + error.message); }
+              setDeleting(false);
+            }}>確認刪除</Button>
+          </>
+        }
+      >
+        <div className="text-center space-y-4 py-4">
+          <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto">
+            <ExclamationTriangleIcon className="w-10 h-10" />
+          </div>
+          <h4 className="text-xl font-bold text-danger">此操作無法恢復！</h4>
+          <p className="text-text-muted">
+            客戶 <b>「{client.name}」</b> 的所有資料將被永久刪除，<br/>
+            包括預約記錄、療程庫存及相關交易紀錄（CASCADE）。
+          </p>
+        </div>
+      </Modal>
+
+      {/* ✂️ 手動扣減 Modal */}
+      <Modal
+        show={showManualDeduct}
+        onClose={() => setShowManualDeduct(false)}
+        title="✂️ 手動扣減療程"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowManualDeduct(false)}>取消</Button>
+            <Button variant="primary" loading={manualDeducting} onClick={async () => {
+              if (!manualDeductForm.reason.trim()) { setManualDeductError('請填寫扣減原因'); return; }
+              setManualDeducting(true);
+              setManualDeductError(null);
+              const { error } = await supabase.rpc('deduct_service_from_appointment', {
+                p_appointment_id: null,
+                p_service_ids: [manualDeductTarget.id],
+                p_payment_method: manualDeductForm.payment_method,
+              });
+              if (error) { setManualDeductError(error.message); }
+              else { setShowManualDeduct(false); fetchData(); }
+              setManualDeducting(false);
+            }}>確認扣減 {manualDeductForm.sessions} 次</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {manualDeductError && <Alert color="failure">{manualDeductError}</Alert>}
+          {manualDeductTarget && (
+            <div className="bg-bg p-4 rounded-xl text-sm space-y-1">
+              <p>療程：<b>{manualDeductTarget.treatments?.name}</b></p>
+              <p>剩餘次數：{manualDeductTarget.remaining_sessions} / {manualDeductTarget.total_sessions}</p>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">扣減次數</label>
+              <TextInput type="number" min="1" value={manualDeductForm.sessions} onChange={(e) => setManualDeductForm({...manualDeductForm, sessions: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">付款方式</label>
+              <select className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface" value={manualDeductForm.payment_method} onChange={(e) => setManualDeductForm({...manualDeductForm, payment_method: e.target.value})}>
+                <option value="cash">💵 現金</option>
+                <option value="card">💳 信用卡</option>
+                <option value="transfer">📱 轉賬</option>
+                <option value="other">📋 其他</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">🔴 扣減原因 (必填)</label>
+            <TextInput placeholder="例：客戶到店消費" value={manualDeductForm.reason} onChange={(e) => setManualDeductForm({...manualDeductForm, reason: e.target.value})} />
           </div>
         </div>
       </Modal>

@@ -44,6 +44,7 @@ const NewAppointmentPage = () => {
   const [rooms, setRooms] = useState([]);
   const [equipment, setEquipment] = useState([]);
   const [conflicts, setConflicts] = useState({ staff: false, room: false, equip: false });
+  const [schedules, setSchedules] = useState([]);  // 排班資料
 
   useEffect(() => {
     fetchOptions();
@@ -59,9 +60,36 @@ const NewAppointmentPage = () => {
     setStaff(sData || []);
     setRooms(rData || []);
     setEquipment(mData || []);
+    // 載入排班資料
+    const { data: schData } = await supabase.from('staff_schedules').select('*');
+    setSchedules(schData || []);
   };
 
-  // 三維防撞檢查 — 查詢 Supabase 確認美容師/房間/儀器是否衝突
+  // 根據排班取得該美容師可用的時間段
+  const getAvailableTimes = () => {
+    const allTimes = ['10:00','10:30','11:00','11:30','12:00','14:00','14:30','15:00'];
+    if (!formData.staff_id || !formData.appointment_date) return allTimes;
+    const day = new Date(formData.appointment_date).getDay();
+    const staffSchedules = schedules.filter(s => s.staff_id === formData.staff_id && s.day_of_week === day);
+    if (staffSchedules.length === 0) return allTimes; // 無排班資料 → 不阻擋
+    // 過濾：只有時間在排班範圍內的才顯示
+    return allTimes.filter(time => {
+      return staffSchedules.some(sch => {
+        if (sch.is_off) return false;
+        return time >= sch.start_time && time < sch.end_time;
+      });
+    });
+  };
+
+  // 取得美容師當天排班狀態文字
+  const getStaffScheduleLabel = (staffId) => {
+    if (!formData.appointment_date) return '';
+    const day = new Date(formData.appointment_date).getDay();
+    const sch = schedules.find(s => s.staff_id === staffId && s.day_of_week === day);
+    if (!sch) return '（無排班）';
+    if (sch.is_off) return '（休假）';
+    return `（${sch.start_time}-${sch.end_time}）`;
+  };
   const checkConflicts = async () => {
     if (!formData.appointment_date || !formData.start_time) return;
 
@@ -210,7 +238,7 @@ const NewAppointmentPage = () => {
               <div>
                 <Label>時間</Label>
                 <div className="grid grid-cols-4 gap-2 mt-2">
-                  {['10:00','10:30','11:00','11:30','12:00','14:00','14:30','15:00'].map(time => (
+                  {getAvailableTimes().map(time => (
                     <button
                       key={time}
                       className={`py-2 text-sm rounded-lg border transition-all ${formData.start_time === time ? 'bg-primary text-white border-primary shadow-md' : 'bg-white text-text hover:bg-primary-light/20'}`}
@@ -228,7 +256,15 @@ const NewAppointmentPage = () => {
                 <Label>美容師</Label>
                 <Select value={formData.staff_id} onChange={(e) => setFormData({...formData, staff_id: e.target.value})}>
                   <option value="">選擇美容師</option>
-                  {staff.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {staff.map(s => {
+                    const label = getStaffScheduleLabel(s.id);
+                    const isOff = label.includes('休假');
+                    return (
+                      <option key={s.id} value={s.id} disabled={isOff}>
+                        {s.name}{label ? ' ' + label : ''}
+                      </option>
+                    );
+                  })}
                 </Select>
                 {conflicts.staff && <p className="text-xs text-danger mt-1">⚠️ 該美容師此時段已有預約</p>}
               </div>

@@ -280,18 +280,32 @@ const DailyAppointmentsPage = () => {
 
                     {/* 取消按鈕：confirmed 且未出席 */}
                     {app.status === 'confirmed' && (
-                      <button
-                        className="text-xs text-text-muted hover:text-danger transition-colors flex items-center gap-1 mt-1"
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          if (confirm('確定取消此預約？')) {
-                            await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', app.id);
-                            fetchAppointments();
-                          }
-                        }}
-                      >
-                        <XCircleIcon className="w-4 h-4" /> 取消
-                      </button>
+                      <div className="flex items-center gap-2 mt-1">
+                        <button
+                          className="text-xs text-danger hover:text-red-700 transition-colors flex items-center gap-1"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm('確定標示此預約為失約？\n失約次數會自動累計。')) {
+                              await supabase.from('appointments').update({ status: 'no_show' }).eq('id', app.id);
+                              fetchAppointments();
+                            }
+                          }}
+                        >
+                          <ExclamationTriangleIcon className="w-4 h-4" /> 失約
+                        </button>
+                        <button
+                          className="text-xs text-text-muted hover:text-danger transition-colors flex items-center gap-1"
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (confirm('確定取消此預約？')) {
+                              await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', app.id);
+                              fetchAppointments();
+                            }
+                          }}
+                        >
+                          <XCircleIcon className="w-4 h-4" /> 取消
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
