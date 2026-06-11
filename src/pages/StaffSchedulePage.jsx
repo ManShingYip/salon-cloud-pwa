@@ -1,13 +1,13 @@
 /**
- * 員工排班設定頁面 v2 (僅店長)
- * 7 天網格 × 員工列表 + 自由新增/停用員工
+ * 員工排班設定頁面 v3 (僅店長)
+ * 7 天網格 × 員工列表 + 自由新增/停用員工 + 複製排班 + 刪除排班
  */
 import React, { useState, useEffect } from 'react';
 import { Card, Spinner, Alert, ToggleSwitch, TextInput } from 'flowbite-react';
 import { supabase } from '@/config/supabase';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
-import { PlusIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 const DAYS = ['日', '一', '二', '三', '四', '五', '六'];
 
@@ -61,15 +61,36 @@ const StaffSchedulePage = () => {
     setSaving(true);
     const existing = getSchedule(editTarget.staffId, editTarget.day);
     if (existing) {
-      await supabase.from('staff_schedules').update(editForm).eq('id', existing.id);
+      if (editForm.is_off) {
+        // 全天休假 → 刪除排班 record（grid 顯示「休假」）
+        await supabase.from('staff_schedules').delete().eq('id', existing.id);
+      } else {
+        await supabase.from('staff_schedules').update({
+          start_time: editForm.start_time,
+          end_time: editForm.end_time,
+          is_off: false,
+        }).eq('id', existing.id);
+      }
     } else {
-      await supabase.from('staff_schedules').insert({
-        staff_id: editTarget.staffId,
-        day_of_week: editTarget.day,
-        start_time: editForm.start_time,
-        end_time: editForm.end_time,
-        is_off: editForm.is_off,
-      });
+      if (editForm.is_off) {
+        // 新建休假 record
+        await supabase.from('staff_schedules').insert({
+          staff_id: editTarget.staffId,
+          day_of_week: editTarget.day,
+          start_time: '00:00',
+          end_time: '23:59',
+          is_off: true,
+        });
+      } else {
+        // 新建上班 record
+        await supabase.from('staff_schedules').insert({
+          staff_id: editTarget.staffId,
+          day_of_week: editTarget.day,
+          start_time: editForm.start_time,
+          end_time: editForm.end_time,
+          is_off: false,
+        });
+      }
     }
     setShowEdit(false);
     fetchData();
@@ -112,7 +133,6 @@ const StaffSchedulePage = () => {
         <Button variant="primary" icon={PlusIcon} onClick={openAddStaff}>新增員工</Button>
       </header>
 
-      {/* 員工列表 */}
       {staff.length === 0 ? (
         <Alert color="info">目前沒有任何員工，請點擊「新增員工」開始。</Alert>
       ) : (
@@ -178,17 +198,20 @@ const StaffSchedulePage = () => {
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-bg rounded-xl">
             <span className="font-medium">全天休假</span>
-            <ToggleSwitch checked={editForm.is_off} onChange={(v) => setEditForm({...editForm, is_off: v})} />
+            <ToggleSwitch
+              checked={editForm.is_off}
+              onChange={(v) => setEditForm({...editForm, is_off: v})}
+            />
           </div>
           {!editForm.is_off && (
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-2">上班時間</label>
+                <label className="block text-sm font-medium mb-1">上班時間</label>
                 <input type="time" className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface focus:ring-primary focus:border-primary"
                   value={editForm.start_time} onChange={(e) => setEditForm({...editForm, start_time: e.target.value})} />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2">下班時間</label>
+                <label className="block text-sm font-medium mb-1">下班時間</label>
                 <input type="time" className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface focus:ring-primary focus:border-primary"
                   value={editForm.end_time} onChange={(e) => setEditForm({...editForm, end_time: e.target.value})} />
               </div>
@@ -211,7 +234,7 @@ const StaffSchedulePage = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2">姓名</label>
+            <label className="block text-sm font-medium mb-1">姓名</label>
             <TextInput value={staffForm.name} onChange={(e) => setStaffForm({...staffForm, name: e.target.value})} placeholder="員工姓名..." />
           </div>
           {staffForm.id && (
