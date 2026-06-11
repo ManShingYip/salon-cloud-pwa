@@ -98,7 +98,8 @@ CREATE INDEX idx_settle_locked_by ON daily_settlements (locked_by);
 
 
 -- Step 5: activity_log.user_id → staff (nullable)
---    activity_log 原本 INSERT-ONLY，只改 FK target
+DROP POLICY IF EXISTS log_select ON activity_log;
+
 ALTER TABLE activity_log
   DROP CONSTRAINT IF EXISTS activity_log_user_id_fkey;
 
@@ -111,11 +112,15 @@ SET new_user_id = (
 )
 WHERE al.new_user_id IS NULL;
 
-ALTER TABLE activity_log DROP COLUMN IF EXISTS user_id;
+ALTER TABLE activity_log DROP COLUMN IF EXISTS user_id CASCADE;
 ALTER TABLE activity_log RENAME COLUMN new_user_id TO user_id;
 
 DROP INDEX IF EXISTS idx_log_user;
 CREATE INDEX idx_log_user ON activity_log (user_id);
+
+-- 重建 RLS policy（用新 column）
+CREATE POLICY "log_select" ON activity_log FOR SELECT
+  USING (user_id = (SELECT s.id FROM staff s WHERE s.profile_id = auth.uid()) OR (SELECT public.is_admin()));
 
 
 -- Step 6: COMMENT
