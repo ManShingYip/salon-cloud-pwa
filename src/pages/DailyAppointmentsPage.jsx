@@ -36,7 +36,8 @@ const DailyAppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [bookedDays, setBookedDays] = useState([]); // 有預約的日期
+  const [bookedDays, setBookedDays] = useState([]);
+  const [bookedCounts, setBookedCounts] = useState({}); // 每天預約數
 
   // Deduction Modal State
   const [showDeduction, setShowDeduction] = useState(false);
@@ -68,8 +69,14 @@ const DailyAppointmentsPage = () => {
         .lte('appointment_date', last)
         .neq('status', 'cancelled');
       if (data) {
+        // 計算每天有幾個預約
+        const counts = {};
+        data.forEach(r => {
+          counts[r.appointment_date] = (counts[r.appointment_date] || 0) + 1;
+        });
         const days = [...new Set(data.map(r => r.appointment_date))];
         setBookedDays(days);
+        setBookedCounts(counts);
       }
     };
     fetchMonthBookings();
@@ -177,7 +184,21 @@ const DailyAppointmentsPage = () => {
               locale={zhHK}
               modifiers={{ booked: bookedDays.map(d => parseISO(d)) }}
               modifiersClassNames={{
-                booked: 'font-extrabold',
+                booked: '',
+              }}
+              components={{
+                DayContent: ({ date }) => {
+                  const dateStr = format(date, 'yyyy-MM-dd');
+                  const count = bookedCounts[dateStr] || 0;
+                  return (
+                    <div className="flex flex-col items-center">
+                      <span>{date.getDate()}</span>
+                      {count > 0 && (
+                        <span className="text-[10px] leading-none text-primary font-bold mt-0.5">{count}</span>
+                      )}
+                    </div>
+                  );
+                },
               }}
               className="w-full flex justify-center"
             />
