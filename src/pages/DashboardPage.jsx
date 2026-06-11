@@ -77,7 +77,7 @@ const DashboardPage = () => {
     };
 
     const revenue = {
-      total: 0, cash: 0, card: 0, transfer: 0, voidCount: 0,
+      total: 0, cash: 0, card: 0, transfer: 0, other: 0, voidCount: 0,
     };
     payments?.forEach(p => {
       const amt = parseFloat(p.amount) || 0;
@@ -85,6 +85,7 @@ const DashboardPage = () => {
       if (p.payment_method === 'cash') revenue.cash += amt;
       else if (p.payment_method === 'card') revenue.card += amt;
       else if (p.payment_method === 'transfer') revenue.transfer += amt;
+      else revenue.other += amt;
       if (p.remarks?.includes('VOID')) revenue.voidCount++;
     });
 

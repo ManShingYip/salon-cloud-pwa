@@ -54,7 +54,7 @@ export const exportSales = async (supabase) => {
     '療程': tx.treatments?.name || '',
     '美容師': tx.profiles?.name || '',
     '金額': tx.amount,
-    '支付方式': tx.payment_method === 'cash' ? '現金' : tx.payment_method === 'card' ? '信用卡' : tx.payment_method === 'transfer' ? '轉賬' : tx.payment_method,
+    '支付方式': tx.payment_method === 'cash' ? '現金' : tx.payment_method === 'card' ? '信用卡' : tx.payment_method === 'transfer' ? '轉賬' : tx.payment_method === 'other' ? '其他' : tx.payment_method,
     '備註': tx.remarks || '',
   }));
   downloadExcel(rows, `銷售紀錄_${new Date().toISOString().split('T')[0]}`, '銷售紀錄');

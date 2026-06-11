@@ -1,7 +1,6 @@
 /**
  * 客戶詳情頁面 - iPad 橫向佈局
- * 左側客戶基本資訊與提示 + 右側已購療程庫存 + 下方預約歷史
- * v3: 支付取代扣減、退款用直接 DB 操作確保可靠性
+ * v4: 支付用 PaymentModal 統一組件、退款加退款方式、購買記錄收入
  */
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -16,12 +15,12 @@ import {
   ClockIcon,
   ShoppingCartIcon,
   CreditCardIcon,
-  BanknotesIcon,
 } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import Button from '@/components/ui/Button';
 import Tag from '@/components/ui/Tag';
 import Modal from '@/components/ui/Modal';
+import PaymentModal from '@/components/treatments/PaymentModal';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ClientDetailPage = () => {
@@ -43,14 +42,14 @@ const ClientDetailPage = () => {
   // 🛒 購買療程 Modal
   const [showPurchase, setShowPurchase] = useState(false);
   const [allTreatments, setAllTreatments] = useState([]);
-  const [purchaseForm, setPurchaseForm] = useState({ treatment_id: '', sessions: 1, unit_price: '', expiry_date: '' });
+  const [purchaseForm, setPurchaseForm] = useState({ treatment_id: '', sessions: 1, unit_price: '', expiry_date: '', payment_method: 'cash' });
   const [purchasing, setPurchasing] = useState(false);
   const [purchaseError, setPurchaseError] = useState(null);
 
   // 💰 退款 Modal
   const [showRefund, setShowRefund] = useState(false);
   const [refundTarget, setRefundTarget] = useState(null);
-  const [refundForm, setRefundForm] = useState({ reason: '', amount: '', sessions: '' });
+  const [refundForm, setRefundForm] = useState({ reason: '', amount: '', sessions: '', refund_method: 'cash' });
   const [refunding, setRefunding] = useState(false);
   const [refundError, setRefundError] = useState(null);
 
@@ -58,12 +57,9 @@ const ClientDetailPage = () => {
   const [showDelete, setShowDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // 💳 支付 Modal
+  // 💳 支付 Modal（用 PaymentModal 組件）
   const [showPayment, setShowPayment] = useState(false);
   const [paymentTarget, setPaymentTarget] = useState(null);
-  const [paymentForm, setPaymentForm] = useState({ sessions: '1', payment_method: 'cash', reason: '' });
-  const [paying, setPaying] = useState(false);
-  const [paymentError, setPaymentError] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -115,12 +111,12 @@ const ClientDetailPage = () => {
   // 💰 打開退款 Modal
   const openRefund = (svc) => {
     setRefundTarget(svc);
-    setRefundForm({ reason: '', amount: svc.unit_price || '', sessions: '1' });
+    setRefundForm({ reason: '', amount: svc.unit_price || '', sessions: '1', refund_method: 'cash' });
     setRefundError(null);
     setShowRefund(true);
   };
 
-  // 💰 執行退款
+  // 💰 執行退款（自由輸入模式 — 店長自己決定退幾多錢、退咩方式）
   const handleRefund = async () => {
     if (!refundForm.reason.trim()) { setRefundError('請填寫退款原因'); return; }
     setRefunding(true);
@@ -135,6 +131,7 @@ const ClientDetailPage = () => {
         p_sessions_to_restore: sessionsToRestore,
         p_refund_amount: refundAmount,
         p_reason: refundForm.reason.trim(),
+        p_refund_method: refundForm.refund_method,
       });
 
       if (error) {
@@ -149,7 +146,7 @@ const ClientDetailPage = () => {
     setRefunding(false);
   };
 
-  // 🛒 購買療程
+  // 🛒 購買療程（成功後記錄收入）
   const handlePurchase = async () => {
     if (!purchaseForm.treatment_id) { setPurchaseError('請選擇療程'); return; }
     setPurchasing(true);
@@ -168,6 +165,22 @@ const ClientDetailPage = () => {
       if (error) {
         setPurchaseError(error.message);
       } else {
+        // 記錄收入：create payment_transactions
+        const purchaseAmount = (parseFloat(purchaseForm.unit_price) || 0) * (parseInt(purchaseForm.sessions) || 1);
+        if (purchaseAmount > 0) {
+          const userId = (await supabase.auth.getUser()).data.user?.id;
+          await supabase.from('payment_transactions').insert({
+            client_id: id,
+            treatment_id: purchaseForm.treatment_id,
+            staff_id: userId,
+            amount: purchaseAmount,
+            amount_received: purchaseAmount,
+            payment_method: purchaseForm.payment_method || 'other',
+            transaction_date: new Date().toISOString().split('T')[0],
+            settled_by: userId,
+            remarks: '客戶購買療程',
+          });
+        }
         setShowPurchase(false);
         fetchData();
       }
@@ -223,7 +236,6 @@ const ClientDetailPage = () => {
     }
     setPaying(false);
   };
-
   if (loading) return <div className="flex justify-center p-20"><Spinner size="xl" /></div>;
   if (error) return <Alert color="failure">{error}</Alert>;
   if (!client) return <Alert color="failure">找不到該客戶資料</Alert>;
@@ -330,8 +342,6 @@ const ClientDetailPage = () => {
                     <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
                     <Button variant="secondary" size="md" icon={CreditCardIcon} onClick={() => {
                       setPaymentTarget(svc);
-                      setPaymentForm({ sessions: '1', payment_method: 'cash', reason: '' });
-                      setPaymentError(null);
                       setShowPayment(true);
                     }}>支付</Button>
                   </div>
@@ -497,6 +507,15 @@ const ClientDetailPage = () => {
             </div>
           </div>
           <div>
+            <label className="block text-sm font-medium mb-2">付款方式</label>
+            <select className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface" value={purchaseForm.payment_method} onChange={(e) => setPurchaseForm({...purchaseForm, payment_method: e.target.value})}>
+              <option value="cash">💵 現金</option>
+              <option value="card">💳 信用卡</option>
+              <option value="transfer">📱 轉賬</option>
+              <option value="other">📋 其他</option>
+            </select>
+          </div>
+          <div>
             <label className="block text-sm font-medium mb-2">到期日 (可選)</label>
             <input type="date" className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface focus:ring-primary focus:border-primary" value={purchaseForm.expiry_date} onChange={(e) => setPurchaseForm({...purchaseForm, expiry_date: e.target.value})} />
           </div>
@@ -532,6 +551,15 @@ const ClientDetailPage = () => {
               <label className="block text-sm font-medium mb-2">退款金額 (HKD)</label>
               <TextInput type="number" value={refundForm.amount} onChange={(e) => setRefundForm({...refundForm, amount: e.target.value})} />
             </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2">退款方式</label>
+            <select className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface" value={refundForm.refund_method} onChange={(e) => setRefundForm({...refundForm, refund_method: e.target.value})}>
+              <option value="cash">💵 現金</option>
+              <option value="card">💳 信用卡</option>
+              <option value="transfer">📱 轉賬</option>
+              <option value="other">📋 其他</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-2">🔴 退款原因 (必填)</label>
@@ -570,47 +598,16 @@ const ClientDetailPage = () => {
         </div>
       </Modal>
 
-      {/* 💳 支付 Modal */}
-      <Modal
-        show={showPayment}
-        onClose={() => setShowPayment(false)}
-        title="💳 療程支付"
-        footer={
-          <>
-            <Button variant="secondary" onClick={() => setShowPayment(false)}>取消</Button>
-            <Button variant="primary" loading={paying} onClick={handlePayment}>確認支付 {paymentForm.sessions} 次</Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          {paymentError && <Alert color="failure">{paymentError}</Alert>}
-          {paymentTarget && (
-            <div className="bg-bg p-4 rounded-xl text-sm space-y-1">
-              <p>療程：<b>{paymentTarget.treatments?.name}</b></p>
-              <p>剩餘次數：{paymentTarget.remaining_sessions} / {paymentTarget.total_sessions}</p>
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">支付次數</label>
-              <TextInput type="number" min="1" value={paymentForm.sessions} onChange={(e) => setPaymentForm({...paymentForm, sessions: e.target.value})} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">付款方式</label>
-              <select className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface" value={paymentForm.payment_method} onChange={(e) => setPaymentForm({...paymentForm, payment_method: e.target.value})}>
-                <option value="cash">💵 現金</option>
-                <option value="card">💳 信用卡</option>
-                <option value="transfer">📱 轉賬</option>
-                <option value="other">📋 其他</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">支付原因 (必填)</label>
-            <TextInput placeholder="例：客戶到店消費" value={paymentForm.reason} onChange={(e) => setPaymentForm({...paymentForm, reason: e.target.value})} />
-          </div>
-        </div>
-      </Modal>
+      {/* 💳 支付 Modal — 使用通用 PaymentModal 組件 */}
+      {paymentTarget && (
+        <PaymentModal
+          show={showPayment}
+          onClose={() => { setShowPayment(false); fetchData(); }}
+          mode="manual"
+          clientService={paymentTarget}
+          clientName={client.name}
+        />
+      )}
     </div>
   );
 };

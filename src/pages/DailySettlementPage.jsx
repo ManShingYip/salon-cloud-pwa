@@ -42,7 +42,7 @@ const RevenuePage = () => {
     acc.total += amt;
     acc[tx.payment_method] = (acc[tx.payment_method] || 0) + amt;
     return acc;
-  }, { total: 0, cash: 0, card: 0, transfer: 0 });
+  }, { total: 0, cash: 0, card: 0, transfer: 0, other: 0 });
 
   // 每月加總
   const dailyTotals = {};
@@ -77,6 +77,7 @@ const RevenuePage = () => {
             <option value="cash">💵 現金</option>
             <option value="card">💳 信用卡</option>
             <option value="transfer">📱 轉賬</option>
+            <option value="other">📋 其他</option>
           </Select>
         </div>
         <div className="flex-1 text-right text-sm text-text-muted">
@@ -108,6 +109,12 @@ const RevenuePage = () => {
             <ArrowsRightLeftIcon className="w-5 h-5" /><span className="text-sm">轉賬</span>
           </div>
           <span className="text-xl font-bold text-text">HK${totals.transfer.toLocaleString()}</span>
+        </div>
+        <div className="bg-surface p-5 rounded-2xl shadow-card border border-gray-100">
+          <div className="flex items-center gap-2 text-text-muted mb-2">
+            <ArrowsRightLeftIcon className="w-5 h-5" /><span className="text-sm">其他</span>
+          </div>
+          <span className="text-xl font-bold text-text">HK${(totals.other || 0).toLocaleString()}</span>
         </div>
       </div>
 
@@ -155,7 +162,7 @@ const RevenuePage = () => {
                   <td className="px-6 py-4 font-bold">{tx.clients?.name}</td>
                   <td className="px-6 py-4">{tx.treatments?.name}</td>
                   <td className="px-6 py-4">
-                    {tx.payment_method === 'cash' ? '💵 現金' : tx.payment_method === 'card' ? '💳 信用卡' : '📱 轉賬'}
+                    {tx.payment_method === 'cash' ? '💵 現金' : tx.payment_method === 'card' ? '💳 信用卡' : tx.payment_method === 'transfer' ? '📱 轉賬' : tx.payment_method === 'other' ? '📋 其他' : tx.payment_method}
                   </td>
                   <td className="px-6 py-4 text-right font-bold text-primary">HK${(parseFloat(tx.amount) || 0).toLocaleString()}</td>
                   <td className="px-6 py-4 text-xs text-text-muted max-w-[180px] truncate">{tx.remarks || '-'}</td>

@@ -1,0 +1,17 @@
+function_name,arguments,return_type,language
+check_appointment_conflict,"p_appointment_date date, p_start_time time without time zone, p_end_time time without time zone, p_staff_id uuid, p_room_id uuid, p_equipment_id uuid DEFAULT NULL::uuid, p_exclude_appt_id uuid DEFAULT NULL::uuid","TABLE(has_conflict boolean, staff_conflict boolean, room_conflict boolean, equip_conflict boolean)",plpgsql
+close_daily_settlement,"p_settlement_date date, p_difference_note text DEFAULT NULL::text",jsonb,plpgsql
+deduct_service_from_appointment,"p_appointment_id uuid, p_service_ids uuid[], p_payment_method text DEFAULT 'cash'::text, p_amount numeric DEFAULT NULL::numeric",jsonb,plpgsql
+generate_member_id,,trigger,plpgsql
+is_admin,,boolean,plpgsql
+is_admin_or_self,check_id uuid,boolean,plpgsql
+list_dormant_clients,,SETOF dormant_clients,sql
+manual_grant_sessions,"p_client_id uuid, p_treatment_id uuid, p_sessions integer, p_reason text DEFAULT NULL::text, p_unit_price numeric DEFAULT NULL::numeric, p_expiry_date date DEFAULT NULL::date",jsonb,plpgsql
+refund_deduction,"p_client_service_id uuid, p_sessions_to_restore integer, p_refund_amount numeric, p_reason text",jsonb,plpgsql
+revert_attended_to_confirmed,"p_appointment_id uuid, p_reason text",jsonb,plpgsql
+rls_auto_enable,,event_trigger,plpgsql
+set_claim_role,"uid uuid, new_role text",void,plpgsql
+update_client_last_visit,,trigger,plpgsql
+update_no_show_count,,trigger,plpgsql
+update_updated_at_column,,trigger,plpgsql
+user_role,,text,plpgsql
