@@ -93,7 +93,7 @@ const StaffSchedulePage = () => {
     if (staffForm.id) {
       await supabase.from('profiles').update({ name: staffForm.name.trim(), is_active: staffForm.is_active }).eq('id', staffForm.id);
     } else {
-      await supabase.from('profiles').insert({ name: staffForm.name.trim(), business_id: '00000000-0000-0000-0000-000000000001' });
+      await supabase.from('profiles').insert({ name: staffForm.name.trim(), role: 'staff', business_id: '00000000-0000-0000-0000-000000000001' });
     }
     setShowStaff(false);
     fetchData();
