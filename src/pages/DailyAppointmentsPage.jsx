@@ -21,9 +21,9 @@ import {
 import { supabase } from '@/config/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { DayPicker } from 'react-day-picker';
+import 'react-day-picker/style.css';
 import { format, parseISO, startOfMonth, endOfMonth, addDays } from 'date-fns';
 import { zhHK } from 'date-fns/locale';
-import 'react-day-picker/dist/style.css';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Tag from '@/components/ui/Tag';
@@ -188,17 +188,17 @@ const DailyAppointmentsPage = () => {
               selected={parseISO(selectedDate)}
               onSelect={(day) => { if (day) setSelectedDate(format(day, 'yyyy-MM-dd')); }}
               locale={zhHK}
-              modifiers={{ booked: bookedDays.map(d => parseISO(d)) }}
-              modifiersClassNames={{ booked: '' }}
               components={{
-                DayContent: ({ date }) => {
-                  const ds = format(date, 'yyyy-MM-dd');
+                DayButton: ({ day, modifiers, ...buttonProps }) => {
+                  const ds = day?.isoDate || '';
                   const count = bookedCounts[ds] || 0;
                   return (
-                    <div className="flex flex-col items-center leading-tight">
-                      <span className={`text-sm ${count > 0 ? 'font-extrabold text-primary' : ''}`}>{date.getDate()}</span>
-                      {count > 0 && <span className="text-[9px] text-primary font-semibold">{count}筆</span>}
-                    </div>
+                    <button {...buttonProps} type="button" className="rdp-day_button w-full h-full min-h-[44px]">
+                      <div className="flex flex-col items-center leading-tight">
+                        <span className={`text-sm ${count > 0 ? 'font-extrabold text-primary' : ''}`}>{day.date.getDate()}</span>
+                        {count > 0 && <span className="text-[9px] text-primary font-semibold">{count}筆</span>}
+                      </div>
+                    </button>
                   );
                 },
               }}
