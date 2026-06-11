@@ -51,15 +51,61 @@ const ActivityLogPage = () => {
     return 'blue';
   };
 
+  // 將 JSONB details 轉為人可讀的中文鍵值對
   const formatDetails = (details) => {
     if (!details) return '-';
-    if (typeof details === 'string') return details;
-    // JSONB object → readable string
-    try {
-      return JSON.stringify(details, null, 1);
-    } catch {
-      return String(details);
+    let obj = details;
+    if (typeof obj === 'string') {
+      try { obj = JSON.parse(obj); } catch { return obj; }
     }
+    if (typeof obj !== 'object') return String(obj);
+
+    const map = {
+      appointment_id: '預約 ID',
+      client_service_id: '療程庫存 ID',
+      treatment_name: '療程名稱',
+      before_remaining: '扣前次數',
+      after_remaining: '扣後次數',
+      total_amount: '總金額',
+      payment_method: '付款方式',
+      transaction_id: '交易 ID',
+      deducted_services: '已扣療程',
+      settlement_date: '結算日期',
+      reason: '原因',
+      previous_status: '扣前狀態',
+      new_status: '扣後狀態',
+      restored_count: '已退回次數',
+      restored_services_count: '已退回項數',
+      voided_transaction_ids: '作廢交易 ID',
+      refund_amount: '退款金額',
+      restored_sessions: '已回補次數',
+      sessions: '次數',
+      unit_price: '單價',
+      client_id: '客戶 ID',
+      treatment_id: '療程 ID',
+      staff_id: '美容師 ID',
+      cash: '現金',
+      card: '信用卡',
+      transfer: '轉賬',
+      other: '其他',
+      note: '備註',
+      message: '訊息',
+    };
+
+    const order = Object.keys(obj);
+    const lines = order.map((key) => {
+      const label = map[key] || key;
+      const val = obj[key];
+      let display = val;
+      if (val && typeof val === 'object') {
+        // 陣列 → 簡短顯示
+        if (Array.isArray(val)) display = val.map(String).join(', ');
+        else display = JSON.stringify(val);
+      }
+      return `${label}: ${display}`;
+    });
+
+    return lines.join('\n');
   };
 
   return (
@@ -125,7 +171,9 @@ const ActivityLogPage = () => {
                     <Tag color={getActionColor(log.action_type)}>{getActionLabel(log.action_type)}</Tag>
                   </Table.Cell>
                   <Table.Cell className="font-bold">{log.profiles?.name || '系統'}</Table.Cell>
-                  <Table.Cell className="text-sm text-text-muted font-mono whitespace-pre-wrap max-w-[400px]">{formatDetails(log.details)}</Table.Cell>
+                  <Table.Cell className="text-sm text-text-muted font-mono whitespace-pre-wrap max-w-[400px] text-xs leading-relaxed">
+                    {formatDetails(log.details)}
+                  </Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>
