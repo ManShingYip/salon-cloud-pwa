@@ -153,7 +153,7 @@ const ActivityLogPage = () => {
       <Card className="overflow-hidden">
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
-        ) : (
+        ) : logs.length > 0 ? (
           <Table hoverable>
             <Table.Head className="bg-bg">
               <Table.HeadCell>時間</Table.HeadCell>
@@ -178,6 +178,12 @@ const ActivityLogPage = () => {
               ))}
             </Table.Body>
           </Table>
+        ) : (
+          <div className="text-center py-20 text-text-muted">
+            <ClipboardDocumentListIcon className="w-16 h-16 mx-auto opacity-20 mb-4" />
+            <p className="text-lg">暫無活動紀錄</p>
+            <p className="text-sm mt-2">當系統有扣數、退款、新增客戶等操作時，會自動記錄在此。</p>
+          </div>
         )}
       </Card>
     </div>

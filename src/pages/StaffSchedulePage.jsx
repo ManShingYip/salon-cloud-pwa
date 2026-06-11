@@ -26,7 +26,7 @@ const StaffSchedulePage = () => {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: sData }, { data: schData }] = await Promise.all([
-      supabase.from('profiles').select('*').eq('role', 'staff').eq('is_active', true),
+      supabase.from('profiles').select('*').eq('is_active', true),
       supabase.from('staff_schedules').select('*').order('day_of_week'),
     ]);
     setStaff(sData || []);
@@ -78,7 +78,9 @@ const StaffSchedulePage = () => {
       </header>
 
       {staff.length === 0 ? (
-        <Alert color="info">目前沒有活躍的員工，請先建立員工帳號。</Alert>
+        <Alert color="info">
+          目前沒有活躍的使用者。請先在 Supabase Dashboard → Authentication 建立使用者，再在 SQL Editor 插入 profiles 紀錄。
+        </Alert>
       ) : (
         <Card className="overflow-x-auto">
           <table className="w-full border-collapse">
