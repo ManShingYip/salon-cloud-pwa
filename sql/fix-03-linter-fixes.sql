@@ -1,15 +1,14 @@
 -- ============================================================
--- 🔧 Supabase Linter 修復
+-- 🔧 Supabase Linter 修復 + dormant_clients 重建
 -- 執行方式：在 Supabase SQL Editor 中執行此整個檔案
 -- 日期：2026-06-11
 -- ============================================================
 
 -- ============================================================
--- 🔴 Fix 1: dormant_clients 視圖 — SECURITY DEFINER → SECURITY INVOKER
---    Severity: Critical
---    Issue: View was created with SECURITY DEFINER, which bypasses RLS.
---    Fix: Explicitly set security_invoker = true
+-- 🔴 Fix 1: dormant_clients 視圖 — 重建為 SECURITY INVOKER
+--    (security_invoker = true 使用查詢者權限，尊重 RLS)
 -- ============================================================
+DROP VIEW IF EXISTS dormant_clients;
 CREATE OR REPLACE VIEW dormant_clients WITH (security_invoker = true) AS
 SELECT
   c.id,
@@ -24,38 +23,32 @@ WHERE c.last_visit_date IS NOT NULL
 ORDER BY dormant_days DESC;
 
 -- ============================================================
--- 🟡 Fix 2: Auth RLS Initialization Plan — 避免每次政策評估重新呼叫 auth.uid()
---    Severity: Warning (suboptimal query performance at scale)
---    Fix: 將 auth.uid() 包裹在子查詢中，讓 PostgreSQL 只評估一次
+-- 🟡 Fix 2: Auth RLS 政策 — 避免 auth.uid() 重複評估
 -- ============================================================
 
--- 2a. profiles — SELECT 政策
+-- 2a. profiles — SELECT
 DROP POLICY IF EXISTS "profiles_select_own_or_admin" ON profiles;
 CREATE POLICY "profiles_select_own_or_admin" ON profiles FOR SELECT
   USING (public.is_admin() OR (SELECT auth.uid()) = id);
 
--- 2b. profiles — UPDATE 政策
+-- 2b. profiles — UPDATE
 DROP POLICY IF EXISTS "profiles_update_own_or_admin" ON profiles;
 CREATE POLICY "profiles_update_own_or_admin" ON profiles FOR UPDATE
   USING (public.is_admin() OR (SELECT auth.uid()) = id);
 
--- 2c. activity_log — 合併兩個 SELECT 政策 + 修正 auth.uid() 模式
+-- 2c. activity_log — 合併 + 修正 auth.uid() 模式
 DROP POLICY IF EXISTS "log_select_admin" ON activity_log;
 DROP POLICY IF EXISTS "log_select_own" ON activity_log;
 CREATE POLICY "log_select" ON activity_log FOR SELECT
   USING (user_id = (SELECT auth.uid()) OR (SELECT public.is_admin()));
 
 -- ============================================================
--- 🟡 Fix 3: _system_heartbeat — 內部表不需要 RLS
---    Severity: Warning (RLS Enabled No Policy)
---    Fix: Disable RLS on this internal-only table
+-- 🟡 Fix 3: _system_heartbeat — 關閉 RLS
 -- ============================================================
-ALTER TABLE _system_heartbeat DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS _system_heartbeat DISABLE ROW LEVEL SECURITY;
 
 -- ============================================================
--- 🟡 Fix 4: 補漏 FK 索引（高頻率 JOIN 欄位）
---    Severity: Info (Unindexed Foreign Keys)
---    Fix: 針對 payment_transactions + daily_settlements 的 FK 欄位補上索引
+-- 🟡 Fix 4: 補漏 FK 索引
 -- ============================================================
 CREATE INDEX IF NOT EXISTS idx_paytx_appointment ON payment_transactions (appointment_id);
 CREATE INDEX IF NOT EXISTS idx_paytx_client      ON payment_transactions (client_id);

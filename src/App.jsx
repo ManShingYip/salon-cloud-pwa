@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Spinner } from 'flowbite-react';
 import AppLayout from '@/components/layout/AppLayout';
 import AdminGuard from '@/components/ui/AdminGuard';
+import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import LoginPage from '@/pages/LoginPage';
 
 // Pages
@@ -53,7 +54,7 @@ const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<AppLayout user={user} />}>
+        <Route path="/" element={<ErrorBoundary><AppLayout user={user} /></ErrorBoundary>}>
           <Route index element={<DashboardPage />} />
           <Route path="appointments" element={<DailyAppointmentsPage />} />
           <Route path="appointments/new" element={<NewAppointmentPage />} />

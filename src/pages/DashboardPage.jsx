@@ -19,6 +19,16 @@ import { exportClients, exportSales } from '@/utils/exportExcel';
 import Tag from '@/components/ui/Tag';
 import Button from '@/components/ui/Button';
 
+// 安全查詢包裝器：每個查詢獨立容錯，避免一個 404 整頁崩潰
+const safeQuery = async (fn) => {
+  try {
+    return await fn();
+  } catch (e) {
+    console.warn('Dashboard query failed:', e.message);
+    return { data: null, error: e };
+  }
+};
+
 const DashboardPage = () => {
   const navigate = useNavigate();
   const { isOwner } = useAuth();
@@ -35,7 +45,7 @@ const DashboardPage = () => {
     const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
     const firstOfMonth = today.slice(0, 7) + '-01';
 
-    // 並行查詢所有儀表板數據
+    // 並行查詢所有儀表板數據（每個查詢獨立容錯）
     const [
       { data: appts },
       { data: payments },
@@ -47,24 +57,15 @@ const DashboardPage = () => {
       { data: expiringServices },
       { data: noShowClients },
     ] = await Promise.all([
-      // ① 今日預約
-      supabase.from('appointments').select('status').eq('appointment_date', today),
-      // ② 今日收入
-      supabase.from('payment_transactions').select('amount, payment_method, remarks').eq('transaction_date', today),
-      // ③ 沉睡客戶
-      supabase.from('dormant_clients').select('id', { count: 'exact', head: true }),
-      // ③ 活躍客戶數
-      supabase.from('clients').select('id', { count: 'exact', head: true }).gte('last_visit_date', thirtyDaysAgo),
-      // ③ 新客戶
-      supabase.from('clients').select('id', { count: 'exact', head: true }).gte('created_at', firstOfMonth),
-      // ④ 療程熱度 (用最近的 payment_transactions)
-      supabase.from('payment_transactions').select('treatment_id, treatments(name)').gte('transaction_date', thirtyDaysAgo),
-      // ⑤ 員工表現
-      supabase.from('appointments').select('staff_id, profiles(name)').eq('status', 'attended').gte('appointment_date', firstOfMonth),
-      // ⑥ 套票到期
-      supabase.from('client_services').select('*, clients(name), treatments(name)').eq('status', 'active').gte('expiry_date', today).lte('expiry_date', new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]).limit(10),
-      // ⑥ 失約客戶
-      supabase.from('clients').select('id, name').not('last_visit_date', 'is', null).order('last_visit_date', { ascending: true }).limit(20),
+      safeQuery(() => supabase.from('appointments').select('status').eq('appointment_date', today)),
+      safeQuery(() => supabase.from('payment_transactions').select('amount, payment_method, remarks').eq('transaction_date', today)),
+      safeQuery(() => supabase.from('dormant_clients').select('id', { count: 'exact', head: true })),
+      safeQuery(() => supabase.from('clients').select('id', { count: 'exact', head: true }).gte('last_visit_date', thirtyDaysAgo)),
+      safeQuery(() => supabase.from('clients').select('id', { count: 'exact', head: true }).gte('created_at', firstOfMonth)),
+      safeQuery(() => supabase.from('payment_transactions').select('treatment_id, treatments(name)').gte('transaction_date', thirtyDaysAgo)),
+      safeQuery(() => supabase.from('appointments').select('staff_id, profiles(name)').eq('status', 'attended').gte('appointment_date', firstOfMonth)),
+      safeQuery(() => supabase.from('client_services').select('*, clients(name), treatments(name)').eq('status', 'active').gte('expiry_date', today).lte('expiry_date', new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]).limit(10)),
+      safeQuery(() => supabase.from('clients').select('id, name').not('last_visit_date', 'is', null).order('last_visit_date', { ascending: true }).limit(20)),
     ]);
 
     // 彙總計算
