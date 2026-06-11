@@ -300,25 +300,52 @@ const ClientDetailPage = () => {
             </div>
 
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-auto flex-1">
-              {services.map(svc => (
-                <div key={svc.id} className="p-4 rounded-2xl border border-gray-100 bg-white flex justify-between items-center shadow-sm">
-                  <div className="space-y-1">
-                    <h4 className="font-bold text-text">{svc.treatments?.name}</h4>
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl font-black text-primary">{svc.remaining_sessions}</span>
-                      <span className="text-text-muted text-xs">/ {svc.total_sessions} 次剩餘</span>
+              {services.map(svc => {
+                const totalPrice = parseFloat(svc.total_price) || (parseFloat(svc.unit_price) || 0) * (svc.total_sessions || 0);
+                const paidSoFar = totalPrice - (parseFloat(svc.unit_price) || 0) * (svc.remaining_sessions || 0);
+                const paidPct = totalPrice > 0 ? Math.round((paidSoFar / totalPrice) * 100) : 0;
+                const isBuffer = svc.remaining_sessions > 0 || paidSoFar < totalPrice;
+                return (
+                <div key={svc.id} className={`p-4 rounded-2xl border shadow-sm flex flex-col gap-3 ${isBuffer ? 'border-amber-200 bg-amber-50/30' : 'border-emerald-200 bg-emerald-50/30'}`}>
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-text">{svc.treatments?.name}</h4>
+                        {isBuffer ? <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">🟡 緩存</span>
+                                  : <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">🟢 完成</span>}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-2xl font-black ${isBuffer ? 'text-warning' : 'text-success'}`}>{svc.remaining_sessions}</span>
+                        <span className="text-text-muted text-xs">/ {svc.total_sessions} 次剩餘</span>
+                      </div>
                     </div>
-                    <p className="text-[10px] text-text-muted">到期日：{svc.expiry_date || '不限期'}</p>
+                    <div className="flex gap-2 shrink-0">
+                      <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
+                      <Button variant="secondary" size="md" icon={CreditCardIcon} onClick={() => {
+                        setPaymentTarget(svc);
+                        setShowPayment(true);
+                      }}>支付</Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
-                    <Button variant="secondary" size="md" icon={CreditCardIcon} onClick={() => {
-                      setPaymentTarget(svc);
-                      setShowPayment(true);
-                    }}>支付</Button>
+                  {/* 進度 bar */}
+                  <div>
+                    <div className="flex justify-between text-xs text-text-muted mb-1">
+                      <span>已收 HK${paidSoFar.toLocaleString()}</span>
+                      <span>總額 HK${totalPrice.toLocaleString()}</span>
+                    </div>
+                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${paidPct >= 100 ? 'bg-emerald-500' : 'bg-amber-400'}`}
+                        style={{ width: `${paidPct}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-text-muted mt-1">
+                      {paidPct >= 100 ? '已收足' : `尚欠 HK$${(totalPrice - paidSoFar).toLocaleString()}`} · {svc.expiry_date || '不限期'}
+                    </p>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               {services.length === 0 && (
                 <div className="col-span-2 py-10 text-center text-text-muted italic">
                   此客戶目前無任何有效療程庫存。

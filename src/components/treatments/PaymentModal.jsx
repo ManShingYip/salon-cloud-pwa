@@ -211,13 +211,34 @@ const PaymentModal = ({ show, onClose, mode = 'manual', appointment, clientServi
         )}
 
         {/* ---- Manual: 療程資訊 ---- */}
-        {!isAppointment && clientService && (
-          <div className="bg-bg p-4 rounded-xl text-sm space-y-1">
-            <p>療程：<b>{clientService.treatments?.name}</b></p>
-            <p>剩餘：{clientService.remaining_sessions} / {clientService.total_sessions} 次</p>
-            <p>單價：<b>HK${(parseFloat(clientService.unit_price) || 0).toLocaleString()}</b> / 次</p>
-          </div>
-        )}
+        {!isAppointment && clientService && (() => {
+          const totalPrice = parseFloat(clientService.total_price) || (parseFloat(clientService.unit_price) || 0) * (clientService.total_sessions || 0);
+          const paidSoFar = totalPrice - (parseFloat(clientService.unit_price) || 0) * (clientService.remaining_sessions || 0);
+          const paidPct = totalPrice > 0 ? Math.round((paidSoFar / totalPrice) * 100) : 0;
+          return (
+            <div className="bg-bg p-4 rounded-xl text-sm space-y-2">
+              <p>療程：<b>{clientService.treatments?.name}</b></p>
+              <p>剩餘：{clientService.remaining_sessions} / {clientService.total_sessions} 次</p>
+              <p>單價：<b>HK${(parseFloat(clientService.unit_price) || 0).toLocaleString()}</b> / 次</p>
+              {/* 進度 bar：已收 / 總額 */}
+              <div className="pt-1">
+                <div className="flex justify-between text-xs text-text-muted mb-1">
+                  <span>已收 HK${paidSoFar.toLocaleString()}</span>
+                  <span>總額 HK${totalPrice.toLocaleString()}</span>
+                </div>
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${paidPct >= 100 ? 'bg-emerald-500' : 'bg-amber-400'}`}
+                    style={{ width: `${paidPct}%` }}
+                  />
+                </div>
+                <p className="text-xs text-text-muted mt-1">
+                  {paidPct >= 100 ? '🟢 已收足' : `🟡 緩存中 · 尚欠 HK$${(totalPrice - paidSoFar).toLocaleString()}`}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ---- Appointment: 可選服務列表 ---- */}
         {isAppointment && (
