@@ -153,7 +153,9 @@ const NewAppointmentPage = () => {
                 placeholder="輸入姓名或電話..." 
                 onChange={async (e) => {
                   if (e.target.value.length > 1) {
-                    const { data } = await supabase.from('clients').select('*').ilike('name', `%${e.target.value}%`);
+                    const val = e.target.value;
+                    const { data } = await supabase.from('clients').select('*')
+                      .or(`name.ilike.%${val}%,phone.ilike.%${val}%`);
                     setClients(data || []);
                   }
                 }}

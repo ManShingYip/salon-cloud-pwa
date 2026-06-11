@@ -20,15 +20,15 @@ const AppLayout = ({ user }) => {
   const { signOut } = useAuth();
   const isOwner = user?.role === 'shop_owner';
 
-  const menuItems = [
-    { name: '儀表板', path: '/', icon: CalendarDaysIcon, show: true },
-    { name: '今日預約', path: '/appointments', icon: CalendarDaysIcon, show: true },
-    { name: '客戶管理', path: '/clients', icon: UsersIcon, show: true },
-    { name: '療程管理', path: '/treatments', icon: SparklesIcon, show: isOwner },
-    { name: '每日結算', path: '/settlement', icon: BanknotesIcon, show: true },
-    { name: '員工排班', path: '/schedules', icon: ClockIcon, show: isOwner },
-    { name: '活動日誌', path: '/logs', icon: ClipboardDocumentListIcon, show: isOwner },
-    { name: '沉睡客戶', path: '/dormant', icon: MoonIcon, show: isOwner },
+  const allMenuItems = [
+    { name: '儀表板', path: '/', icon: CalendarDaysIcon, adminOnly: false },
+    { name: '今日預約', path: '/appointments', icon: CalendarDaysIcon, adminOnly: false },
+    { name: '客戶管理', path: '/clients', icon: UsersIcon, adminOnly: false },
+    { name: '療程管理', path: '/treatments', icon: SparklesIcon, adminOnly: true },
+    { name: '每日結算', path: '/settlement', icon: BanknotesIcon, adminOnly: false },
+    { name: '員工排班', path: '/schedules', icon: ClockIcon, adminOnly: true },
+    { name: '活動日誌', path: '/logs', icon: ClipboardDocumentListIcon, adminOnly: true },
+    { name: '沉睡客戶', path: '/dormant', icon: MoonIcon, adminOnly: true },
   ];
 
   return (
@@ -42,21 +42,31 @@ const AppLayout = ({ user }) => {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
-          {menuItems.filter(item => item.show).map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `
-                flex items-center gap-3 px-4 py-3 rounded-xl transition-all min-h-[48px]
-                ${isActive 
-                  ? 'bg-primary text-white shadow-md' 
-                  : 'text-text-muted hover:bg-primary-light/30 active:bg-primary-light/50'}
-              `}
-            >
-              <item.icon className="w-6 h-6" />
-              <span className="font-medium">{item.name}</span>
-            </NavLink>
-          ))}
+          {allMenuItems.map((item) => {
+            // 非店長也能看到店長導覽項 — 但用鎖定 icon + 灰字提示
+            const locked = item.adminOnly && !isOwner;
+            return (
+              <NavLink
+                key={item.path}
+                to={locked ? '#' : item.path}
+                onClick={(e) => locked && e.preventDefault()}
+                className={({ isActive }) => `
+                  flex items-center gap-3 px-4 py-3 rounded-xl transition-all min-h-[48px]
+                  ${locked
+                    ? 'text-gray-300 cursor-not-allowed'
+                    : isActive
+                      ? 'bg-primary text-white shadow-md'
+                      : 'text-text-muted hover:bg-primary-light/30 active:bg-primary-light/50'}
+                `}
+              >
+                <item.icon className={`w-6 h-6 ${locked ? 'text-gray-300' : ''}`} />
+                <span className="font-medium flex items-center gap-1">
+                  {item.name}
+                  {locked && <span className="text-[10px] text-gray-300 ml-1">店長</span>}
+                </span>
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* User Info & Logout */}

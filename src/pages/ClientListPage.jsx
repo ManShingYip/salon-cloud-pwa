@@ -12,14 +12,19 @@ import {
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import Tag from '@/components/ui/Tag';
+import Modal from '@/components/ui/Modal';
 
 const ClientListPage = () => {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showAdd, setShowAdd] = useState(false);
+  const [newClient, setNewClient] = useState({ name: '', phone: '', source: '', remarks: '' });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchClients();
@@ -58,7 +63,7 @@ const ClientListPage = () => {
             共 {clients.length} 位客戶 · 搜尋時強制顯示電話後四碼及會員編號
           </p>
         </div>
-        <Button variant="primary" icon={PlusIcon} onClick={() => alert('新增客戶表單 (下一階段實作)')}>
+        <Button variant="primary" icon={PlusIcon} onClick={() => setShowAdd(true)}>
           新增客戶
         </Button>
       </header>
@@ -137,6 +142,55 @@ const ClientListPage = () => {
           </div>
         )}
       </Card>
+
+      {/* 新增客戶 Modal */}
+      <Modal
+        show={showAdd}
+        onClose={() => setShowAdd(false)}
+        title="👤 新增客戶"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowAdd(false)}>取消</Button>
+            <Button variant="primary" loading={saving} onClick={async () => {
+              if (!newClient.name.trim() || !newClient.phone.trim()) return;
+              setSaving(true);
+              const { error } = await supabase.from('clients').insert({
+                name: newClient.name.trim(),
+                phone: newClient.phone.trim(),
+                source: newClient.source || null,
+                remarks: newClient.remarks || null,
+              });
+              if (!error) {
+                setShowAdd(false);
+                setNewClient({ name: '', phone: '', source: '', remarks: '' });
+                fetchClients(search);
+              } else {
+                alert('新增失敗: ' + error.message);
+              }
+              setSaving(false);
+            }}>確認新增</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">姓名 *</label>
+            <TextInput placeholder="客戶姓名" value={newClient.name} onChange={(e) => setNewClient({...newClient, name: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">電話 *</label>
+            <TextInput placeholder="例：61234567" value={newClient.phone} onChange={(e) => setNewClient({...newClient, phone: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">來源</label>
+            <TextInput placeholder="IG廣告 / 朋友介紹 / 街客..." value={newClient.source} onChange={(e) => setNewClient({...newClient, source: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">備註</label>
+            <TextInput placeholder="可選" value={newClient.remarks} onChange={(e) => setNewClient({...newClient, remarks: e.target.value})} />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

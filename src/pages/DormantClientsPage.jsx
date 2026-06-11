@@ -8,6 +8,7 @@ import { MoonIcon, ChatBubbleLeftRightIcon, CalendarIcon } from '@heroicons/reac
 import { supabase } from '@/config/supabase';
 import Button from '@/components/ui/Button';
 import Tag from '@/components/ui/Tag';
+import Modal from '@/components/ui/Modal';
 
 const DormantClientsPage = () => {
   const [clients, setClients] = useState([]);
@@ -19,26 +20,17 @@ const DormantClientsPage = () => {
 
   const fetchDormantClients = async () => {
     setLoading(true);
-    // 獲取 90 天前日期
-    const ninetyDaysAgo = new Date();
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-    const dateStr = ninetyDaysAgo.toISOString().split('T')[0];
-
-    // 實際開發時需透過 SQL JOIN 或 View 找出最後預約日期早於 90 天的客戶
-    const { data } = await supabase
-      .from('clients')
-      .select('*')
-      .lt('last_visit_date', dateStr)
-      .order('last_visit_date', { ascending: false });
-
+    // 使用 dormant_clients View（已在 DB 定義）
+    const { data } = await supabase.from('dormant_clients').select('*').order('dormant_days', { ascending: false });
     setClients(data || []);
     setLoading(false);
   };
 
   const handleRemind = (c) => {
-    // 模擬發送 WhatsApp 提醒
+    // 清理電話號碼格式（去 +852 / 空格 / 符號）
+    const cleanPhone = (c.phone || '').replace(/[^\d]/g, '').replace(/^852/, '');
     const message = `親愛的 ${c.name}，好耐冇見啦！Salon Cloud 提醒您目前仲有療程未做完，而家預約即享驚喜優惠！`;
-    window.open(`https://wa.me/${c.phone}?text=${encodeURIComponent(message)}`, '_blank');
+    window.open(`https://wa.me/852${cleanPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   return (
@@ -74,7 +66,7 @@ const DormantClientsPage = () => {
             </Table.Head>
             <Table.Body className="divide-y">
               {clients.map(c => {
-                const dormantDays = Math.floor((new Date() - new Date(c.last_visit_date)) / (1000 * 60 * 60 * 24));
+                const dormantDays = c.dormant_days || Math.floor((new Date() - new Date(c.last_visit_date)) / (1000 * 60 * 60 * 24));
                 return (
                   <Table.Row key={c.id}>
                     <Table.Cell className="font-bold text-text">{c.name}</Table.Cell>

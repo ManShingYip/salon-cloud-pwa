@@ -21,17 +21,45 @@ const ActivityLogPage = () => {
     setLoading(true);
     let query = supabase.from('activity_log').select(`*, profiles(name)`).order('created_at', { ascending: false }).limit(50);
     if (filter.type) query = query.eq('action_type', filter.type);
-    
+    if (filter.query) query = query.or(`action_type.ilike.%${filter.query}%,target_type.ilike.%${filter.query}%`);
+
     const { data } = await query;
     setLogs(data || []);
     setLoading(false);
   };
 
+  const actionLabels = {
+    deduct_service: '療程扣減',
+    complete_deduction: '扣減完成',
+    create_appointment: '新增預約',
+    cancel_appointment: '取消預約',
+    update_client: '修改客戶',
+    create_client: '新增客戶',
+    finalize_settlement: '每日結算',
+    grant_sessions: '新增療程',
+    refund: '退款',
+    revert_deduction: '退回扣減',
+    revert_appointment: '退回預約',
+  };
+  const getActionLabel = (t) => actionLabels[t] || t;
+
   const getActionColor = (type) => {
-    if (type.includes('deduct')) return 'rose';
-    if (type.includes('create')) return 'green';
-    if (type.includes('delete')) return 'gray';
+    if (type.includes('deduct') || type.includes('revert')) return 'rose';
+    if (type.includes('create') || type.includes('grant')) return 'green';
+    if (type.includes('delete') || type.includes('cancel')) return 'gray';
+    if (type.includes('finalize')) return 'amber';
     return 'blue';
+  };
+
+  const formatDetails = (details) => {
+    if (!details) return '-';
+    if (typeof details === 'string') return details;
+    // JSONB object → readable string
+    try {
+      return JSON.stringify(details, null, 1);
+    } catch {
+      return String(details);
+    }
   };
 
   return (
@@ -94,10 +122,10 @@ const ActivityLogPage = () => {
                     {new Date(log.created_at).toLocaleString('zh-HK', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </Table.Cell>
                   <Table.Cell>
-                    <Tag color={getActionColor(log.action_type)}>{log.action_type_label || log.action_type}</Tag>
+                    <Tag color={getActionColor(log.action_type)}>{getActionLabel(log.action_type)}</Tag>
                   </Table.Cell>
                   <Table.Cell className="font-bold">{log.profiles?.name || '系統'}</Table.Cell>
-                  <Table.Cell className="text-sm text-text-muted">{log.details}</Table.Cell>
+                  <Table.Cell className="text-sm text-text-muted font-mono whitespace-pre-wrap max-w-[400px]">{formatDetails(log.details)}</Table.Cell>
                 </Table.Row>
               ))}
             </Table.Body>

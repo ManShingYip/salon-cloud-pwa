@@ -35,8 +35,10 @@ const ClientDetailPage = () => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 🛒 購買療程 Modal
-  const [showPurchase, setShowPurchase] = useState(false);
+  // 📝 編輯客戶 Modal
+  const [showEdit, setShowEdit] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', phone: '', source: '', remarks: '', is_sensitive: false, sensitive_note: '' });
+  const [editing, setEditing] = useState(false);
   const [allTreatments, setAllTreatments] = useState([]);
   const [purchaseForm, setPurchaseForm] = useState({ treatment_id: '', sessions: 1, unit_price: '', expiry_date: '' });
   const [purchasing, setPurchasing] = useState(false);
@@ -144,7 +146,17 @@ const ClientDetailPage = () => {
           <ArrowLeftIcon className="w-5 h-5" />
           <span className="font-medium">返回客戶列表</span>
         </button>
-        <Button variant="secondary" icon={UserCircleIcon}>編輯客戶資料</Button>
+        <Button variant="secondary" icon={UserCircleIcon} onClick={() => {
+          setEditForm({
+            name: client.name || '',
+            phone: client.phone || '',
+            source: client.source || '',
+            remarks: client.remarks || '',
+            is_sensitive: client.is_sensitive || false,
+            sensitive_note: client.sensitive_note || '',
+          });
+          setShowEdit(true);
+        }}>編輯客戶資料</Button>
       </header>
 
       <div className="flex gap-6 items-start">
@@ -170,7 +182,9 @@ const ClientDetailPage = () => {
               <div className="flex items-center gap-3 text-text">
                 <TagIcon className="w-5 h-5 text-text-muted" />
                 <div className="flex gap-1">
-                  <Tag color="rose">IG廣告</Tag>
+                  <Tag color={client.source?.includes('IG') ? 'rose' : client.source?.includes('朋友') ? 'green' : 'blue'}>
+                  {client.source || '無標記'}
+                </Tag>
                   {client.is_sensitive && <Tag color="amber">特殊敏感</Tag>}
                 </div>
               </div>
@@ -183,9 +197,9 @@ const ClientDetailPage = () => {
             </div>
           </div>
           
-          {client.is_sensitive && (
+          {client.is_sensitive && client.sensitive_note && (
             <Alert color="warning" icon={ExclamationTriangleIcon}>
-              <b>注意事項：</b> 客人怕痛，進行激光療程時需使用較低能量，並頻繁詢問感受。
+              <b>注意事項：</b> {client.sensitive_note}
             </Alert>
           )}
         </aside>
@@ -220,7 +234,19 @@ const ClientDetailPage = () => {
                       {isOwner && (
                         <>
                           <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
-                          <Button variant="secondary" size="md">手動扣減</Button>
+                          <Button variant="secondary" size="md" onClick={() => {
+                            if (!svc) return;
+                            const reason = prompt('請輸入手動扣減原因：');
+                            if (!reason) return;
+                            supabase.rpc('deduct_service_from_appointment', {
+                              p_appointment_id: null,
+                              p_service_ids: [svc.id],
+                              p_payment_method: 'cash',
+                            }).then(({ error }) => {
+                              if (error) alert('扣減失敗: ' + error.message);
+                              else fetchData();
+                            });
+                          }}>手動扣減</Button>
                         </>
                       )}
                     </div>
@@ -269,6 +295,66 @@ const ClientDetailPage = () => {
           </div>
         </section>
       </div>
+
+      {/* 📝 編輯客戶 Modal */}
+      <Modal
+        show={showEdit}
+        onClose={() => setShowEdit(false)}
+        title="✏️ 編輯客戶資料"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowEdit(false)}>取消</Button>
+            <Button variant="primary" loading={editing} onClick={async () => {
+              setEditing(true);
+              const { error } = await supabase.from('clients').update({
+                name: editForm.name.trim(),
+                phone: editForm.phone.trim(),
+                source: editForm.source || null,
+                remarks: editForm.remarks || null,
+                is_sensitive: editForm.is_sensitive,
+                sensitive_note: editForm.is_sensitive ? editForm.sensitive_note : null,
+              }).eq('id', id);
+              if (!error) {
+                setShowEdit(false);
+                fetchData();
+              } else {
+                alert('更新失敗: ' + error.message);
+              }
+              setEditing(false);
+            }}>儲存</Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">姓名</label>
+              <TextInput value={editForm.name} onChange={(e) => setEditForm({...editForm, name: e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">電話</label>
+              <TextInput value={editForm.phone} onChange={(e) => setEditForm({...editForm, phone: e.target.value})} />
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">來源</label>
+            <TextInput placeholder="IG廣告 / 朋友介紹 / 街客..." value={editForm.source} onChange={(e) => setEditForm({...editForm, source: e.target.value})} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">備註</label>
+            <TextInput value={editForm.remarks} onChange={(e) => setEditForm({...editForm, remarks: e.target.value})} />
+          </div>
+          <div className="border-t pt-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" className="w-5 h-5 rounded text-primary" checked={editForm.is_sensitive} onChange={(e) => setEditForm({...editForm, is_sensitive: e.target.checked})} />
+              <span className="font-medium">⚠️ 標記為特殊敏感客戶</span>
+            </label>
+            {editForm.is_sensitive && (
+              <TextInput className="mt-3" placeholder="敏感原因（如：怕痛、過敏體質...）" value={editForm.sensitive_note} onChange={(e) => setEditForm({...editForm, sensitive_note: e.target.value})} />
+            )}
+          </div>
+        </div>
+      </Modal>
 
       {/* 🛒 購買療程 Modal */}
       <Modal

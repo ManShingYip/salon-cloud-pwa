@@ -137,7 +137,7 @@ const DashboardPage = () => {
             <CalendarDaysIcon className="w-5 h-5 text-primary" /> 今日實況
           </h3>
           <div className="space-y-3">
-            <div className="flex justify-between items-center p-3 bg-bg rounded-xl cursor-pointer" onClick={() => navigate('/')}>
+            <div className="flex justify-between items-center p-3 bg-bg rounded-xl cursor-pointer" onClick={() => navigate('/appointments')}>
               <span className="text-text-muted">總預約</span>
               <span className="text-xl font-bold">{d.todayStats.total}</span>
             </div>
