@@ -169,7 +169,7 @@ const ClientDetailPage = () => {
   const sourceColor = client.source?.includes('IG') ? 'rose' : client.source?.includes('朋友') ? 'green' : 'blue';
 
   return (
-    <div className="flex flex-col h-full space-y-6">
+    <div className="flex-1 flex flex-col min-h-0 space-y-6">
       {/* 頂部操作列 */}
       <header className="flex justify-between items-center shrink-0">
         <button
@@ -242,8 +242,8 @@ const ClientDetailPage = () => {
         {/* 右側：已購療程庫存 + 預約歷史 */}
         <section className="flex-1 min-w-0 space-y-4 min-h-0 flex flex-col">
           {/* 已購療程庫存 */}
-          <div className="bg-surface rounded-2xl shadow-card border border-gray-100 overflow-hidden shrink-0">
-            <div className="p-5 border-b border-gray-50 flex items-center justify-between">
+          <div className="bg-surface rounded-2xl shadow-card border border-gray-100 overflow-hidden flex flex-col flex-1 min-h-0">
+            <div className="p-5 border-b border-gray-50 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
                 <SparklesIcon className="w-6 h-6 text-primary" />
                 <h3 className="font-bold text-lg">已購療程庫存 (共 {services.length} 項)</h3>
@@ -253,7 +253,7 @@ const ClientDetailPage = () => {
               </Button>
             </div>
 
-            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-auto flex-1">
               {services.map(svc => (
                 <div key={svc.id} className="p-4 rounded-2xl border border-gray-100 bg-white flex justify-between items-center shadow-sm">
                   <div className="space-y-1">

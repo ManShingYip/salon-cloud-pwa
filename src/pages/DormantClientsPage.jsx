@@ -3,7 +3,7 @@
  * 自動識別 90 天內無預約的客戶，並提供一鍵提醒功能
  */
 import React, { useState, useEffect } from 'react';
-import { Table, Badge, Spinner, Alert } from 'flowbite-react';
+import { Spinner, Alert } from 'flowbite-react';
 import { MoonIcon, ChatBubbleLeftRightIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import Button from '@/components/ui/Button';
@@ -56,47 +56,49 @@ const DormantClientsPage = () => {
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : (
-          <Table hoverable>
-            <Table.Head className="bg-bg">
-              <Table.HeadCell>客戶姓名</Table.HeadCell>
-              <Table.HeadCell>會員編號</Table.HeadCell>
-              <Table.HeadCell>最後到訪日</Table.HeadCell>
-              <Table.HeadCell>沉睡天數</Table.HeadCell>
-              <Table.HeadCell className="text-right">操作</Table.HeadCell>
-            </Table.Head>
-            <Table.Body className="divide-y">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
+                <th className="px-6 py-4 font-bold">客戶姓名</th>
+                <th className="px-6 py-4 font-bold">會員編號</th>
+                <th className="px-6 py-4 font-bold">最後到訪日</th>
+                <th className="px-6 py-4 font-bold">沉睡天數</th>
+                <th className="px-6 py-4 font-bold text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
               {clients.map(c => {
                 const dormantDays = c.dormant_days || Math.floor((new Date() - new Date(c.last_visit_date)) / (1000 * 60 * 60 * 24));
                 return (
-                  <Table.Row key={c.id}>
-                    <Table.Cell className="font-bold text-text">{c.name}</Table.Cell>
-                    <Table.Cell>{c.member_id}</Table.Cell>
-                    <Table.Cell>{c.last_visit_date}</Table.Cell>
-                    <Table.Cell>
+                  <tr key={c.id}>
+                    <td className="px-6 py-4 font-bold text-text">{c.name}</td>
+                    <td className="px-6 py-4">{c.member_id}</td>
+                    <td className="px-6 py-4">{c.last_visit_date}</td>
+                    <td className="px-6 py-4">
                       <Tag color={dormantDays > 180 ? 'amber' : 'gray'}>沉睡 {dormantDays} 天</Tag>
-                    </Table.Cell>
-                    <Table.Cell className="text-right">
-                      <Button 
-                        variant="secondary" 
-                        size="md" 
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <Button
+                        variant="secondary"
+                        size="md"
                         icon={ChatBubbleLeftRightIcon}
                         onClick={() => handleRemind(c)}
                       >
                         發送提醒
                       </Button>
-                    </Table.Cell>
-                  </Table.Row>
+                    </td>
+                  </tr>
                 );
               })}
               {clients.length === 0 && (
-                <Table.Row>
-                  <Table.Cell colSpan={5} className="text-center py-10 text-text-muted italic">
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-text-muted italic">
                     恭喜！目前沒有沉睡超過 90 天的客戶。
-                  </Table.Cell>
-                </Table.Row>
+                  </td>
+                </tr>
               )}
-            </Table.Body>
-          </Table>
+            </tbody>
+          </table>
         )}
       </div>
     </div>

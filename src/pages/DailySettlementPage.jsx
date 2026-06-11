@@ -137,30 +137,32 @@ const RevenuePage = () => {
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : transactions.length > 0 ? (
-          <Table hoverable>
-            <Table.Head className="bg-bg">
-              <Table.HeadCell>日期</Table.HeadCell>
-              <Table.HeadCell>客戶</Table.HeadCell>
-              <Table.HeadCell>療程</Table.HeadCell>
-              <Table.HeadCell>支付</Table.HeadCell>
-              <Table.HeadCell className="text-right">金額</Table.HeadCell>
-              <Table.HeadCell>備註</Table.HeadCell>
-            </Table.Head>
-            <Table.Body className="divide-y">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
+                <th className="px-6 py-4 font-bold">日期</th>
+                <th className="px-6 py-4 font-bold">客戶</th>
+                <th className="px-6 py-4 font-bold">療程</th>
+                <th className="px-6 py-4 font-bold">支付</th>
+                <th className="px-6 py-4 font-bold text-right">金額</th>
+                <th className="px-6 py-4 font-bold">備註</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
               {transactions.map(tx => (
-                <Table.Row key={tx.id}>
-                  <Table.Cell className="whitespace-nowrap">{tx.transaction_date}</Table.Cell>
-                  <Table.Cell className="font-bold">{tx.clients?.name}</Table.Cell>
-                  <Table.Cell>{tx.treatments?.name}</Table.Cell>
-                  <Table.Cell>
+                <tr key={tx.id}>
+                  <td className="px-6 py-4 whitespace-nowrap">{tx.transaction_date}</td>
+                  <td className="px-6 py-4 font-bold">{tx.clients?.name}</td>
+                  <td className="px-6 py-4">{tx.treatments?.name}</td>
+                  <td className="px-6 py-4">
                     {tx.payment_method === 'cash' ? '💵 現金' : tx.payment_method === 'card' ? '💳 信用卡' : '📱 轉賬'}
-                  </Table.Cell>
-                  <Table.Cell className="text-right font-bold text-primary">HK${(parseFloat(tx.amount) || 0).toLocaleString()}</Table.Cell>
-                  <Table.Cell className="text-xs text-text-muted max-w-[180px] truncate">{tx.remarks || '-'}</Table.Cell>
-                </Table.Row>
+                  </td>
+                  <td className="px-6 py-4 text-right font-bold text-primary">HK${(parseFloat(tx.amount) || 0).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-xs text-text-muted max-w-[180px] truncate">{tx.remarks || '-'}</td>
+                </tr>
               ))}
-            </Table.Body>
-          </Table>
+            </tbody>
+          </table>
         ) : (
           <p className="text-center py-16 text-text-muted">此期間暫無交易紀錄</p>
         )}

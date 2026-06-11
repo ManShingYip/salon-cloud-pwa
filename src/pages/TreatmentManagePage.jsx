@@ -3,7 +3,7 @@
  * 列表顯示所有療程項目，支援新增與編輯
  */
 import React, { useState, useEffect } from 'react';
-import { Table, Badge, TextInput, Spinner, Card, Alert } from 'flowbite-react';
+import { TextInput, Spinner, Alert } from 'flowbite-react';
 import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -102,46 +102,50 @@ const TreatmentManagePage = () => {
         </Button>
       </header>
 
-      <Card className="overflow-hidden">
+      <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : (
-          <Table hoverable>
-            <Table.Head className="bg-bg">
-              <Table.HeadCell>療程名稱</Table.HeadCell>
-              <Table.HeadCell>建議時長 (分)</Table.HeadCell>
-              <Table.HeadCell>單次價格</Table.HeadCell>
-              <Table.HeadCell>狀態</Table.HeadCell>
-              <Table.HeadCell className="text-right">操作</Table.HeadCell>
-            </Table.Head>
-            <Table.Body className="divide-y">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
+                <th className="px-6 py-4 font-bold">療程名稱</th>
+                <th className="px-6 py-4 font-bold">建議時長 (分)</th>
+                <th className="px-6 py-4 font-bold">單次價格</th>
+                <th className="px-6 py-4 font-bold">狀態</th>
+                <th className="px-6 py-4 font-bold text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
               {treatments.map(t => (
-                <Table.Row key={t.id}>
-                  <Table.Cell className="font-bold text-text">
+                <tr key={t.id}>
+                  <td className="px-6 py-4 font-bold text-text">
                     <div className="flex items-center gap-2">
                       <SparklesIcon className="w-5 h-5 text-primary" />
                       {t.name}
                     </div>
-                  </Table.Cell>
-                  <Table.Cell>{t.duration_minutes || 60} 分鐘</Table.Cell>
-                  <Table.Cell className="text-primary font-bold">HK${(t.single_price || 0).toLocaleString()}</Table.Cell>
-                  <Table.Cell>
-                    <Badge color={t.is_active ? "success" : "gray"}>{t.is_active ? '啟用中' : '已停用'}</Badge>
-                  </Table.Cell>
-                  <Table.Cell className="text-right flex justify-end gap-2">
+                  </td>
+                  <td className="px-6 py-4">{t.duration_minutes || 60} 分鐘</td>
+                  <td className="px-6 py-4 text-primary font-bold">HK${(t.single_price || 0).toLocaleString()}</td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center rounded-lg px-3 py-1 text-xs font-medium ${t.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {t.is_active ? '啟用中' : '已停用'}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-right flex justify-end gap-2">
                     <button onClick={() => handleEdit(t)} className="p-2 text-info hover:bg-blue-50 rounded-lg transition-colors">
                       <PencilIcon className="w-5 h-5" />
                     </button>
                     <button onClick={() => setShowDeleteConfirm(t)} className="p-2 text-danger hover:bg-red-50 rounded-lg transition-colors">
                       <TrashIcon className="w-5 h-5" />
                     </button>
-                  </Table.Cell>
-                </Table.Row>
+                  </td>
+                </tr>
               ))}
-            </Table.Body>
-          </Table>
+            </tbody>
+          </table>
         )}
-      </Card>
+      </div>
 
       <Modal
         show={showModal}

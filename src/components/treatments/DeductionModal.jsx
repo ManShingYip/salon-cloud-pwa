@@ -3,7 +3,7 @@
  * 當預約改為「已出席」時自動彈出，讓員工選擇要扣減的療程庫存
  */
 import React, { useState, useEffect } from 'react';
-import { Checkbox, Table, Spinner, Alert } from 'flowbite-react';
+import { Checkbox, Spinner, Alert } from 'flowbite-react';
 import { supabase } from '@/config/supabase';
 import Modal from '@/components/ui/Modal';
 import Button from '@/components/ui/Button';
@@ -98,41 +98,43 @@ const DeductionModal = ({ show, onClose, appointment }) => {
             <div className="flex justify-center p-6"><Spinner /></div>
           ) : services.length > 0 ? (
             <div className="border rounded-xl overflow-hidden">
-              <Table hoverable>
-                <Table.Head className="bg-gray-50">
-                  <Table.HeadCell className="w-12"></Table.HeadCell>
-                  <Table.HeadCell>療程名稱</Table.HeadCell>
-                  <Table.HeadCell>剩餘次數</Table.HeadCell>
-                </Table.Head>
-                <Table.Body className="divide-y">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-xs uppercase text-text-muted border-b border-gray-100">
+                    <th className="px-4 py-3 w-12"></th>
+                    <th className="px-4 py-3 font-bold">療程名稱</th>
+                    <th className="px-4 py-3 font-bold">剩餘次數</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
                   {services.map((s) => (
-                    <Table.Row 
-                      key={s.id} 
-                      className={`cursor-pointer active:bg-gray-100 ${selectedIds.includes(s.id) ? 'bg-primary-light/10' : ''}`}
+                    <tr
+                      key={s.id}
+                      className={`cursor-pointer ${selectedIds.includes(s.id) ? 'bg-primary-light/10' : ''}`}
                       onClick={() => toggleSelect(s.id)}
                     >
-                      <Table.Cell className="p-4">
-                        <Checkbox 
-                          checked={selectedIds.includes(s.id)} 
+                      <td className="p-4">
+                        <Checkbox
+                          checked={selectedIds.includes(s.id)}
                           onChange={() => toggleSelect(s.id)}
                           className="w-6 h-6 rounded-lg text-primary focus:ring-primary"
                         />
-                      </Table.Cell>
-                      <Table.Cell className="font-medium text-text">
+                      </td>
+                      <td className="px-4 py-3 font-medium text-text">
                         {s.treatments?.name}
                         {s.treatments?.is_active === false && (
                           <span className="text-xs text-warning ml-2">(已停用)</span>
                         )}
-                      </Table.Cell>
-                      <Table.Cell>
+                      </td>
+                      <td className="px-4 py-3">
                         <Tag color={s.remaining_sessions <= 2 ? 'amber' : 'green'}>
                           剩餘 {s.remaining_sessions} / {s.total_sessions} 次
                         </Tag>
-                      </Table.Cell>
-                    </Table.Row>
+                      </td>
+                    </tr>
                   ))}
-                </Table.Body>
-              </Table>
+                </tbody>
+              </table>
             </div>
           ) : (
             <Alert color="warning">該客戶目前沒有可用的預購療程，請先進行充值或現場購買。</Alert>

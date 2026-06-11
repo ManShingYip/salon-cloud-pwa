@@ -3,7 +3,7 @@
  * 紀錄所有關鍵操作，如扣數、新增客戶、修改預約等
  */
 import React, { useState, useEffect } from 'react';
-import { Table, TextInput, Select, Spinner, Card } from 'flowbite-react';
+import { TextInput, Select, Spinner } from 'flowbite-react';
 import { MagnifyingGlassIcon, ClipboardDocumentListIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import Tag from '@/components/ui/Tag';
@@ -154,30 +154,32 @@ const ActivityLogPage = () => {
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : logs.length > 0 ? (
-          <Table hoverable>
-            <Table.Head className="bg-bg">
-              <Table.HeadCell>時間</Table.HeadCell>
-              <Table.HeadCell>操作類型</Table.HeadCell>
-              <Table.HeadCell>操作者</Table.HeadCell>
-              <Table.HeadCell>詳細內容</Table.HeadCell>
-            </Table.Head>
-            <Table.Body className="divide-y">
-              {logs.map(log => (
-                <Table.Row key={log.id}>
-                  <Table.Cell className="text-sm">
-                    {new Date(log.created_at).toLocaleString('zh-HK', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                  </Table.Cell>
-                  <Table.Cell>
-                    <Tag color={getActionColor(log.action_type)}>{getActionLabel(log.action_type)}</Tag>
-                  </Table.Cell>
-                  <Table.Cell className="font-bold">{log.profiles?.name || '系統'}</Table.Cell>
-                  <Table.Cell className="text-sm text-text-muted font-mono whitespace-pre-wrap max-w-[400px] text-xs leading-relaxed">
-                    {formatDetails(log.details)}
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-            </Table.Body>
-          </Table>
+          <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-bg text-xs uppercase text-text-muted border-b border-gray-100">
+                  <th className="px-6 py-4 font-bold">時間</th>
+                  <th className="px-6 py-4 font-bold">操作類型</th>
+                  <th className="px-6 py-4 font-bold">操作者</th>
+                  <th className="px-6 py-4 font-bold">詳細內容</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {logs.map(log => (
+                  <tr key={log.id}>
+                    <td className="px-6 py-4 text-sm">
+                      {new Date(log.created_at).toLocaleString('zh-HK', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                    <td className="px-6 py-4">
+                      <Tag color={getActionColor(log.action_type)}>{getActionLabel(log.action_type)}</Tag>
+                    </td>
+                    <td className="px-6 py-4 font-bold">{log.profiles?.name || '系統'}</td>
+                    <td className="px-6 py-4 text-sm text-text-muted font-mono whitespace-pre-wrap max-w-[400px] text-xs leading-relaxed">
+                      {formatDetails(log.details)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
         ) : (
           <div className="text-center py-20 text-text-muted">
             <ClipboardDocumentListIcon className="w-16 h-16 mx-auto opacity-20 mb-4" />
