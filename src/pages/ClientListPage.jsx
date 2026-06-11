@@ -155,6 +155,7 @@ const ClientListPage = () => {
               if (!newClient.name.trim() || !newClient.phone.trim()) return;
               setSaving(true);
               const { error } = await supabase.from('clients').insert({
+                business_id: '00000000-0000-0000-0000-000000000001',
                 name: newClient.name.trim(),
                 phone: newClient.phone.trim(),
                 source: newClient.source || null,

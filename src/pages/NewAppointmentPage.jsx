@@ -16,10 +16,12 @@ import {
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 
 const NewAppointmentPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   

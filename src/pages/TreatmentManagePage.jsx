@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Badge, TextInput, Spinner, Card, Alert } from 'flowbite-react';
 import { PlusIcon, PencilIcon, TrashIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 
@@ -18,6 +19,7 @@ const TreatmentManagePage = () => {
   const [formData, setFormData] = useState({ name: '', single_price: '', duration_minutes: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchTreatments();
@@ -58,6 +60,7 @@ const TreatmentManagePage = () => {
     setError(null);
 
     const payload = {
+      business_id: '00000000-0000-0000-0000-000000000001',
       name: formData.name.trim(),
       single_price: parseFloat(formData.single_price) || 0,
       duration_minutes: parseInt(formData.duration_minutes) || 60,
