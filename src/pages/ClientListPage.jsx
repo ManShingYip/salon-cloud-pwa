@@ -80,11 +80,11 @@ const ClientListPage = () => {
       </div>
 
       {/* 客戶列表 */}
-      <Card className="overflow-hidden">
+      <div className="bg-surface rounded-2xl shadow-card overflow-x-auto">
         {loading ? (
           <div className="flex justify-center p-20"><Spinner size="xl" /></div>
         ) : clients.length > 0 ? (
-          <Table hoverable>
+          <Table hoverable className="min-w-full">
             <Table.Head className="bg-bg">
               <Table.HeadCell>客戶姓名</Table.HeadCell>
               <Table.HeadCell>電話後四碼</Table.HeadCell>
@@ -141,7 +141,7 @@ const ClientListPage = () => {
             <p className="text-sm mt-2">點擊右上角「新增客戶」開始建立客戶名單</p>
           </div>
         )}
-      </Card>
+      </div>
 
       {/* 新增客戶 Modal */}
       <Modal

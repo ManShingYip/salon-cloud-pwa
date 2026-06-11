@@ -1,18 +1,19 @@
 /**
- * 每日結算板頁面
- * 加總當日收入，處理支付方式分組，並鎖定結算
+ * 每月結算板頁面
+ * 選取月份，彙總該月所有交易，按支付方式分類，一鍵鎖定
  */
 import React, { useState, useEffect } from 'react';
-import { Table, Textarea, Alert, Badge, Spinner } from 'flowbite-react';
+import { Table, Textarea, Alert, Badge, Spinner, Select } from 'flowbite-react';
 import { LockClosedIcon, CheckCircleIcon, BanknotesIcon, CreditCardIcon, ArrowsRightLeftIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 
-const DailySettlementPage = () => {
-  const [date] = useState(new Date().toISOString().split('T')[0]);
+const MonthlySettlementPage = () => {
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const [yearMonth, setYearMonth] = useState(thisMonth);
   const [transactions, setTransactions] = useState([]);
-  const [settlement, setSettlement] = useState(null);
+  const [settlements, setSettlements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showConfirm, setShowConfirm] = useState(false);
   const [remark, setRemark] = useState('');
@@ -20,26 +21,30 @@ const DailySettlementPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [date]);
+  }, [yearMonth]);
+
+  const [yyyy, mm] = yearMonth.split('-').map(Number);
+  const daysInMonth = new Date(yyyy, mm, 0).getDate();
+  const from = `${yearMonth}-01`;
+  const to = `${yearMonth}-${String(daysInMonth).padStart(2, '0')}`;
 
   const fetchData = async () => {
     setLoading(true);
-    // 獲取當日交易
     const { data: txData } = await supabase
       .from('payment_transactions')
-      .select(`*, clients(name), treatments(name)`)
-      .eq('transaction_date', date);
-    
-    // 獲取已有的結算紀錄
-    const { data: setlData } = await supabase
+      .select('*, clients(name), treatments(name)')
+      .gte('transaction_date', from)
+      .lte('transaction_date', to)
+      .order('transaction_date');
+
+    const { data: settData } = await supabase
       .from('daily_settlements')
       .select('*')
-      .eq('settlement_date', date)
-      .maybeSingle();
+      .gte('settlement_date', from)
+      .lte('settlement_date', to);
 
     setTransactions(txData || []);
-    setSettlement(setlData);
-    if (setlData) setRemark(setlData.remarks || '');
+    setSettlements(settData || []);
     setLoading(false);
   };
 
@@ -49,24 +54,37 @@ const DailySettlementPage = () => {
     return acc;
   }, { total: 0, cash: 0, card: 0, transfer: 0 });
 
+  const lockedDays = settlements.filter(s => s.status === 'locked');
+  const isAllLocked = lockedDays.length > 0;
+
   const handleFinalize = async () => {
     setSubmitting(true);
-    const { data: userData } = await supabase.auth.getUser();
-    const userId = userData?.user?.id;
-
-    const { error } = await supabase.rpc('close_daily_settlement', {
-      p_settlement_date: date,
-      p_difference_note: remark || null,
-    });
-
-    if (!error) {
-      setShowConfirm(false);
-      fetchData();
-    } else {
-      alert('結算失敗: ' + error.message);
+    // 遍歷該月每一天進行鎖定
+    let errors = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = `${yearMonth}-${String(d).padStart(2, '0')}`;
+      const { error } = await supabase.rpc('close_daily_settlement', {
+        p_settlement_date: date,
+        p_difference_note: remark || null,
+      });
+      if (error) errors++;
     }
     setSubmitting(false);
+    if (errors > 0) {
+      alert(`部分日期鎖定失敗 (${errors}/${daysInMonth})，可能已被鎖定`);
+    } else {
+      setShowConfirm(false);
+      fetchData();
+    }
   };
+
+  // 生成月份選項（過去 12 個月）
+  const monthOptions = [];
+  const now = new Date();
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    monthOptions.push(d.toISOString().slice(0, 7));
+  }
 
   if (loading) return <div className="flex justify-center p-20"><Spinner size="xl" /></div>;
 
@@ -74,42 +92,42 @@ const DailySettlementPage = () => {
     <div className="max-w-5xl mx-auto space-y-8 pb-20">
       <header className="flex justify-between items-center bg-surface p-6 rounded-2xl shadow-card">
         <div>
-          <h1 className="text-2xl font-bold text-text flex items-center gap-2">
-            📊 每日結算 — {date}
-          </h1>
-          <p className="text-text-muted mt-1">結算今日所有現金與電子支付明細</p>
+          <h1 className="text-2xl font-bold text-text flex items-center gap-2">📊 每月結算</h1>
+          <p className="text-text-muted mt-1">結算當月所有現金與電子支付明細</p>
         </div>
-        {settlement?.status === 'locked' && (
-          <Badge color="success" size="lg" icon={LockClosedIcon}>
-            結算已鎖定
-          </Badge>
-        )}
+        <div className="flex items-center gap-4">
+          <Select value={yearMonth} onChange={(e) => setYearMonth(e.target.value)} className="min-w-[140px]">
+            {monthOptions.map(m => (
+              <option key={m} value={m}>{m} 月</option>
+            ))}
+          </Select>
+          {isAllLocked && (
+            <Badge color="success" size="lg" icon={LockClosedIcon}>已鎖定 {lockedDays.length} 天</Badge>
+          )}
+        </div>
       </header>
 
-      {/* 收入總覽卡片 */}
+      {/* 收入總覽 */}
       <div className="grid grid-cols-4 gap-4">
         <div className="col-span-1 bg-primary text-white p-6 rounded-2xl shadow-lg">
-          <span className="text-sm opacity-80 block mb-2">總收入</span>
+          <span className="text-sm opacity-80 block mb-2">{yearMonth} 總收入</span>
           <span className="text-3xl font-bold">HK${totals.total.toLocaleString()}</span>
         </div>
         <div className="bg-surface p-6 rounded-2xl shadow-card border border-gray-100">
           <div className="flex items-center gap-2 text-text-muted mb-2">
-            <BanknotesIcon className="w-5 h-5" />
-            <span className="text-sm">現金</span>
+            <BanknotesIcon className="w-5 h-5" /><span className="text-sm">現金</span>
           </div>
           <span className="text-xl font-bold text-text">HK${totals.cash.toLocaleString()}</span>
         </div>
         <div className="bg-surface p-6 rounded-2xl shadow-card border border-gray-100">
           <div className="flex items-center gap-2 text-text-muted mb-2">
-            <CreditCardIcon className="w-5 h-5" />
-            <span className="text-sm">信用卡</span>
+            <CreditCardIcon className="w-5 h-5" /><span className="text-sm">信用卡</span>
           </div>
           <span className="text-xl font-bold text-text">HK${totals.card.toLocaleString()}</span>
         </div>
         <div className="bg-surface p-6 rounded-2xl shadow-card border border-gray-100">
           <div className="flex items-center gap-2 text-text-muted mb-2">
-            <ArrowsRightLeftIcon className="w-5 h-5" />
-            <span className="text-sm">轉賬</span>
+            <ArrowsRightLeftIcon className="w-5 h-5" /><span className="text-sm">轉賬</span>
           </div>
           <span className="text-xl font-bold text-text">HK${totals.transfer.toLocaleString()}</span>
         </div>
@@ -118,60 +136,59 @@ const DailySettlementPage = () => {
       {/* 交易明細 */}
       <div className="bg-surface rounded-2xl shadow-card overflow-hidden">
         <div className="p-5 border-b border-gray-50 flex justify-between items-center">
-          <h3 className="font-bold italic">今日已完成療程交易明細</h3>
+          <h3 className="font-bold">{yearMonth} 交易明細 ({transactions.length} 筆)</h3>
         </div>
-        <Table hoverable>
-          <Table.Head className="bg-bg">
-            <Table.HeadCell>客戶</Table.HeadCell>
-            <Table.HeadCell>療程項目</Table.HeadCell>
-            <Table.HeadCell>支付方式</Table.HeadCell>
-            <Table.HeadCell className="text-right">金額</Table.HeadCell>
-          </Table.Head>
-          <Table.Body className="divide-y">
-            {transactions.map(tx => (
-              <Table.Row key={tx.id} className="min-h-[56px]">
-                <Table.Cell className="font-bold">{tx.clients?.name}</Table.Cell>
-                <Table.Cell>{tx.treatments?.name}</Table.Cell>
-                <Table.Cell>
-                  <span className="capitalize">{tx.payment_method === 'cash' ? '💵 現金' : tx.payment_method === 'card' ? '💳 信用卡' : '📱 轉賬'}</span>
-                </Table.Cell>
-                <Table.Cell className="text-right font-bold text-primary">HK${tx.amount.toLocaleString()}</Table.Cell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
-      </div>
-
-      {/* 備註與結算按鈕 */}
-      <div className="bg-surface p-6 rounded-2xl shadow-card space-y-4">
-        <h3 className="font-bold flex items-center gap-2">
-          <CheckCircleIcon className="w-5 h-5 text-text-muted" />
-          備註 / 備用金差異說明
-        </h3>
-        <Textarea
-          placeholder="若金額與實際現金有差異，請在此說明原因..."
-          rows={3}
-          value={remark}
-          onChange={(e) => setRemark(e.target.value)}
-          disabled={settlement?.status === 'locked'}
-          className="rounded-xl border-gray-200 focus:ring-primary focus:border-primary"
-        />
-        
-        {settlement?.status !== 'locked' && (
-          <div className="flex justify-center pt-4">
-            <Button 
-              variant="primary" 
-              size="lg" 
-              icon={LockClosedIcon}
-              onClick={() => setShowConfirm(true)}
-            >
-              完成結算並鎖定 🔒
-            </Button>
-          </div>
+        {transactions.length > 0 ? (
+          <Table hoverable>
+            <Table.Head className="bg-bg">
+              <Table.HeadCell>日期</Table.HeadCell>
+              <Table.HeadCell>客戶</Table.HeadCell>
+              <Table.HeadCell>療程</Table.HeadCell>
+              <Table.HeadCell>支付</Table.HeadCell>
+              <Table.HeadCell className="text-right">金額</Table.HeadCell>
+            </Table.Head>
+            <Table.Body className="divide-y">
+              {transactions.map(tx => (
+                <Table.Row key={tx.id} className="min-h-[56px]">
+                  <Table.Cell>{tx.transaction_date}</Table.Cell>
+                  <Table.Cell className="font-bold">{tx.clients?.name}</Table.Cell>
+                  <Table.Cell>{tx.treatments?.name}</Table.Cell>
+                  <Table.Cell>
+                    {tx.payment_method === 'cash' ? '💵 現金' : tx.payment_method === 'card' ? '💳 信用卡' : '📱 轉賬'}
+                  </Table.Cell>
+                  <Table.Cell className="text-right font-bold text-primary">HK${tx.amount.toLocaleString()}</Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
+        ) : (
+          <p className="text-center py-16 text-text-muted">此月暫無交易紀錄</p>
         )}
       </div>
 
-      {/* Finalize Confirmation Modal */}
+      {/* 鎖定 */}
+      <div className="bg-surface p-6 rounded-2xl shadow-card space-y-4">
+        <h3 className="font-bold flex items-center gap-2">
+          <CheckCircleIcon className="w-5 h-5 text-text-muted" /> 鎖定結算
+        </h3>
+        <p className="text-sm text-text-muted">
+          點擊下方按鈕會將 {yearMonth} 月份所有天數的結算鎖定。鎖定後該月份的交易將無法修改。
+        </p>
+        <Textarea
+          placeholder="備註 / 差異說明（可選）..."
+          rows={2}
+          value={remark}
+          onChange={(e) => setRemark(e.target.value)}
+          className="rounded-xl"
+        />
+        <div className="flex justify-center pt-4">
+          <Button variant="primary" size="lg" icon={LockClosedIcon} onClick={() => setShowConfirm(true)} disabled={isAllLocked}>
+            {isAllLocked ? '已鎖定' : '鎖定本月結算 🔒'}
+          </Button>
+        </div>
+      </div>
+
+      {/* 確認 Modal */}
       <Modal
         show={showConfirm}
         onClose={() => setShowConfirm(false)}
@@ -189,8 +206,8 @@ const DailySettlementPage = () => {
           </div>
           <h4 className="text-xl font-bold">一旦鎖定將無法自行更改</h4>
           <p className="text-text-muted">
-            系統將封存今日所有交易紀錄並生成報表。<br/>
-            如需調整請聯繫總管理員。
+            系統將鎖定 {yearMonth} 月（{daysInMonth} 天）所有交易紀錄。<br/>
+            如需調整請聯繫系統管理員。
           </p>
         </div>
       </Modal>
@@ -198,4 +215,4 @@ const DailySettlementPage = () => {
   );
 };
 
-export default DailySettlementPage;
+export default MonthlySettlementPage;

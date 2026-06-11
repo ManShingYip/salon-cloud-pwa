@@ -1,19 +1,19 @@
 /**
- * 預約建立表單頁面
- * 包含客戶搜尋、療程選擇、美容師/房間/儀器排期與防撞檢查
+ * 預約建立表單頁面 — 單頁版
+ * 客戶搜尋、療程選擇、美容師/房間/儀器、時間、三維防撞
  */
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextInput, Select, Label, Card, Spinner, Alert } from 'flowbite-react';
-import { 
-  UserPlusIcon, 
-  SparklesIcon, 
-  ClockIcon, 
-  HomeIcon, 
+import {
+  UserPlusIcon,
+  SparklesIcon,
+  ClockIcon,
+  HomeIcon,
   WrenchIcon,
   ChevronLeftIcon,
-  ChevronRightIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,11 +22,20 @@ import Button from '@/components/ui/Button';
 const NewAppointmentPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  
-  // Form State
-  const [formData, setFormData] = useState({
+  const [conflictMsg, setConflictMsg] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  // 選項資料
+  const [treatments, setTreatments] = useState([]);
+  const [staff, setStaff] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [equipment, setEquipment] = useState([]);
+  const [schedules, setSchedules] = useState([]);
+  const [clients, setClients] = useState([]);
+
+  // 表單
+  const [form, setForm] = useState({
     client_id: '',
     treatment_id: '',
     staff_id: '',
@@ -34,298 +43,261 @@ const NewAppointmentPage = () => {
     equipment_id: '',
     appointment_date: new Date().toISOString().split('T')[0],
     start_time: '10:00',
-    remarks: ''
   });
 
-  // Options State
-  const [clients, setClients] = useState([]);
-  const [treatments, setTreatments] = useState([]);
-  const [staff, setStaff] = useState([]);
-  const [rooms, setRooms] = useState([]);
-  const [equipment, setEquipment] = useState([]);
-  const [conflicts, setConflicts] = useState({ staff: false, room: false, equip: false });
-  const [schedules, setSchedules] = useState([]);  // 排班資料
+  // 計算結束時間
+  const getEndTime = () => {
+    const t = treatments.find(tx => tx.id === form.treatment_id);
+    const dur = t?.duration_minutes || 60;
+    const [h, m] = form.start_time.split(':').map(Number);
+    const end = new Date(0, 0, 0, h, m + dur);
+    return `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+  };
 
   useEffect(() => {
-    fetchOptions();
+    const load = async () => {
+      const [{ data: tData }, { data: sData }, { data: rData }, { data: eData }, { data: schData }] = await Promise.all([
+        supabase.from('treatments').select('*').eq('is_active', true),
+        supabase.from('profiles').select('*'),
+        supabase.from('rooms').select('*').eq('is_active', true),
+        supabase.from('equipment').select('*').eq('is_active', true),
+        supabase.from('staff_schedules').select('*'),
+      ]);
+      setTreatments(tData || []);
+      setStaff(sData || []);
+      setRooms(rData || []);
+      setEquipment(eData || []);
+      setSchedules(schData || []);
+    };
+    load();
   }, []);
 
-  const fetchOptions = async () => {
-    const { data: tData } = await supabase.from('treatments').select('*');
-    const { data: sData } = await supabase.from('profiles').select('*');
-    const { data: rData } = await supabase.from('rooms').select('*');
-    const { data: mData } = await supabase.from('equipment').select('*');
-
-    setTreatments(tData || []);
-    setStaff(sData || []);
-    setRooms(rData || []);
-    setEquipment(mData || []);
-    // 載入排班資料
-    const { data: schData } = await supabase.from('staff_schedules').select('*');
-    setSchedules(schData || []);
-  };
-
-  // 根據排班取得該美容師可用的時間段
-  const getAvailableTimes = () => {
-    const allTimes = ['10:00','10:30','11:00','11:30','12:00','14:00','14:30','15:00'];
-    if (!formData.staff_id || !formData.appointment_date) return allTimes;
-    const day = new Date(formData.appointment_date).getDay();
-    const staffSchedules = schedules.filter(s => s.staff_id === formData.staff_id && s.day_of_week === day);
-    if (staffSchedules.length === 0) return allTimes; // 無排班資料 → 不阻擋
-    // 過濾：只有時間在排班範圍內的才顯示
-    return allTimes.filter(time => {
-      return staffSchedules.some(sch => {
-        if (sch.is_off) return false;
-        return time >= sch.start_time && time < sch.end_time;
-      });
-    });
-  };
-
-  // 取得美容師當天排班狀態文字
-  const getStaffScheduleLabel = (staffId) => {
-    if (!formData.appointment_date) return '';
-    const day = new Date(formData.appointment_date).getDay();
+  // 排班提示
+  const getScheduleHint = (staffId) => {
+    const day = new Date(form.appointment_date).getDay();
     const sch = schedules.find(s => s.staff_id === staffId && s.day_of_week === day);
     if (!sch) return '（無排班）';
     if (sch.is_off) return '（休假）';
     return `（${sch.start_time}-${sch.end_time}）`;
   };
-  const checkConflicts = async () => {
-    if (!formData.appointment_date || !formData.start_time) return;
 
-    setLoading(true);
-
-    const startTime = formData.start_time;
-    // 計算結束時間 = startTime + 療程時長
-    const treatment = treatments.find(t => t.id === formData.treatment_id);
-    const durationMin = treatment?.duration_minutes || 60;
-    const [h, m] = startTime.split(':').map(Number);
-    const endDate = new Date(0, 0, 0, h, m + durationMin);
-    const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
-
-    // 查詢該時段內是否有衝突預約 (排除 cancelled)
-    const { data: conflicting } = await supabase
-      .from('appointments')
+  // 衝突檢查
+  const checkConflicts = () => {
+    setConflictMsg(null);
+    if (!form.appointment_date || !form.start_time || !form.staff_id || !form.room_id) return true;
+    const endTime = getEndTime();
+    supabase.from('appointments')
       .select('staff_id, room_id, equipment_id')
-      .eq('appointment_date', formData.appointment_date)
+      .eq('appointment_date', form.appointment_date)
       .neq('status', 'cancelled')
       .lt('start_time', endTime)
-      .gt('end_time', startTime);
-
-    if (conflicting) {
-      setConflicts({
-        staff: conflicting.some(c => c.staff_id === formData.staff_id),
-        room: conflicting.some(c => c.room_id === formData.room_id),
-        equip: formData.equipment_id
-          ? conflicting.some(c => c.equipment_id === formData.equipment_id)
-          : false,
+      .gt('end_time', form.start_time)
+      .then(({ data: conflicting }) => {
+        if (!conflicting?.length) return;
+        const msgs = [];
+        if (conflicting.some(c => c.staff_id === form.staff_id)) msgs.push('美容師');
+        if (conflicting.some(c => c.room_id === form.room_id)) msgs.push('房間');
+        if (form.equipment_id && conflicting.some(c => c.equipment_id === form.equipment_id)) msgs.push('儀器');
+        if (msgs.length) setConflictMsg(`⚠️ ${msgs.join('、')}此時段已有預約`);
       });
-    }
-
-    setLoading(false);
+    return true;
   };
 
+  // 送出
   const handleSubmit = async () => {
+    if (!form.client_id || !form.treatment_id || !form.staff_id || !form.room_id) return;
     setLoading(true);
-    // 計算 end_time
-    const treatment = treatments.find(t => t.id === formData.treatment_id);
-    const durationMin = treatment?.duration_minutes || 60;
-    const [h, m] = formData.start_time.split(':').map(Number);
-    const endDate = new Date(0, 0, 0, h, m + durationMin);
-    const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
-
+    const endTime = getEndTime();
     const { error } = await supabase.from('appointments').insert({
-      client_id: formData.client_id,
-      staff_id: formData.staff_id,
-      treatment_id: formData.treatment_id,
-      room_id: formData.room_id,
-      equipment_id: formData.equipment_id || null,
-      appointment_date: formData.appointment_date,
-      start_time: formData.start_time,
+      client_id: form.client_id,
+      staff_id: form.staff_id,
+      treatment_id: form.treatment_id,
+      room_id: form.room_id,
+      equipment_id: form.equipment_id || null,
+      appointment_date: form.appointment_date,
+      start_time: form.start_time,
       end_time: endTime,
       status: 'confirmed',
       created_by: (await supabase.auth.getUser()).data.user.id,
-      remarks: formData.remarks,
     });
-
-    if (!error) {
-      navigate('/');
+    if (error) {
+      alert('建立失敗: ' + error.message);
     } else {
-      alert("儲存失敗: " + error.message);
+      setSuccess(true);
+      setTimeout(() => navigate('/'), 1000);
     }
     setLoading(false);
   };
 
+  const selectedClient = clients.find(c => c.id === form.client_id);
+  const selectedTreatment = treatments.find(t => t.id === form.treatment_id);
+
+  if (success) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <div className="w-20 h-20 bg-green-100 text-success rounded-full flex items-center justify-center mb-6">
+          <CheckCircleIcon className="w-12 h-12" />
+        </div>
+        <h2 className="text-2xl font-bold">預約已建立</h2>
+        <p className="text-text-muted mt-2">即將返回...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 pb-20">
+    <div className="max-w-5xl mx-auto space-y-6 pb-12">
       <header className="flex items-center gap-4">
         <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100">
           <ChevronLeftIcon className="w-6 h-6" />
         </button>
         <h1 className="text-2xl font-bold">建立新預約</h1>
-        <div className="ml-auto flex items-center gap-2">
-          {[1, 2, 3].map(s => (
-            <div key={s} className={`w-3 h-3 rounded-full ${step >= s ? 'bg-primary' : 'bg-gray-200'}`} />
-          ))}
-        </div>
       </header>
 
-      {step === 1 && (
-        <Card className="p-2">
-          <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-            <UserPlusIcon className="w-6 h-6 text-primary" />
-            第一步：選擇客戶與療程
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label>搜尋客戶 (姓名/電話)</Label>
-              <TextInput 
-                placeholder="輸入姓名或電話..." 
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 左欄 */}
+        <div className="space-y-4">
+          <Card className="p-2">
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+              <UserPlusIcon className="w-6 h-6 text-primary" /> 客戶與療程
+            </h3>
+            {/* 客戶搜尋 */}
+            <div className="space-y-2 mb-4">
+              <Label>搜尋客戶 (姓名 / 電話)</Label>
+              <TextInput
+                placeholder="輸入姓名或電話搜尋..."
                 onChange={async (e) => {
                   if (e.target.value.length > 1) {
-                    const val = e.target.value;
                     const { data } = await supabase.from('clients').select('*')
-                      .or(`name.ilike.%${val}%,phone.ilike.%${val}%`);
+                      .or(`name.ilike.%${e.target.value}%,phone.ilike.%${e.target.value}%`);
                     setClients(data || []);
-                  }
+                  } else { setClients([]); }
                 }}
               />
-              <div className="mt-2 space-y-2 max-h-40 overflow-y-auto border rounded-xl p-2 bg-bg">
-                {clients.map(c => (
-                  <div 
-                    key={c.id} 
-                    className={`p-3 rounded-lg border cursor-pointer ${formData.client_id === c.id ? 'bg-primary text-white border-primary' : 'bg-white'}`}
-                    onClick={() => setFormData({...formData, client_id: c.id})}
-                  >
-                    {c.name} ({c.phone.slice(-4)})
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>選擇預約療程</Label>
-              <Select value={formData.treatment_id} onChange={(e) => setFormData({...formData, treatment_id: e.target.value})}>
-                <option value="">請選擇療程...</option>
-                {treatments.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </Select>
-            </div>
-          </div>
-          <div className="flex justify-end mt-6">
-            <Button disabled={!formData.client_id || !formData.treatment_id} onClick={() => setStep(2)}>
-              下一步 <ChevronRightIcon className="w-5 h-5 ml-2" />
-            </Button>
-          </div>
-        </Card>
-      )}
-
-      {step === 2 && (
-        <Card className="p-2">
-          <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-            <ClockIcon className="w-6 h-6 text-primary" />
-            第二步：安排日期、美容師與房間
-          </h3>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div>
-                <Label>日期</Label>
-                <input 
-                  type="date" 
-                  className="w-full border-gray-200 rounded-xl focus:ring-primary focus:border-primary"
-                  value={formData.appointment_date}
-                  onChange={(e) => setFormData({...formData, appointment_date: e.target.value})}
-                />
-              </div>
-              <div>
-                <Label>時間</Label>
-                <div className="grid grid-cols-4 gap-2 mt-2">
-                  {getAvailableTimes().map(time => (
-                    <button
-                      key={time}
-                      className={`py-2 text-sm rounded-lg border transition-all ${formData.start_time === time ? 'bg-primary text-white border-primary shadow-md' : 'bg-white text-text hover:bg-primary-light/20'}`}
-                      onClick={() => { setFormData({...formData, start_time: time}); checkConflicts(); }}
+              {clients.length > 0 && (
+                <div className="max-h-40 overflow-y-auto border rounded-xl p-2 bg-bg space-y-1">
+                  {clients.map(c => (
+                    <div
+                      key={c.id}
+                      className={`p-3 rounded-lg border cursor-pointer ${form.client_id === c.id ? 'bg-primary text-white border-primary' : 'bg-white hover:bg-primary-light/20'}`}
+                      onClick={() => {
+                        setForm({ ...form, client_id: c.id });
+                        setClients([]);
+                      }}
                     >
-                      {time}
-                    </button>
+                      {c.name} · {c.phone.slice(-4)} {c.member_id ? '· ' + c.member_id : ''}
+                    </div>
                   ))}
                 </div>
+              )}
+              {/* 已選客戶 */}
+              {form.client_id && (
+                <div className="flex items-center gap-2 p-3 bg-green-50 rounded-xl text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-success" />
+                  <b>{clients.find(c => c.id === form.client_id)?.name || selectedClient?.name || '已選擇'}</b>
+                </div>
+              )}
+            </div>
+            {/* 療程選擇 */}
+            <div>
+              <Label>療程項目</Label>
+              <Select value={form.treatment_id} onChange={(e) => setForm({...form, treatment_id: e.target.value})}>
+                <option value="">請選擇...</option>
+                {treatments.map(t => <option key={t.id} value={t.id}>{t.name} ({t.duration_minutes}分 · HK${t.single_price})</option>)}
+              </Select>
+            </div>
+          </Card>
+
+          <Card className="p-2">
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+              <ClockIcon className="w-6 h-6 text-primary" /> 時間
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>日期</Label>
+                <input type="date" className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface" value={form.appointment_date} onChange={(e) => setForm({...form, appointment_date: e.target.value})} />
+              </div>
+              <div>
+                <Label>開始時間</Label>
+                <input type="time" className="w-full border-gray-200 rounded-xl min-h-[48px] px-4 bg-surface" value={form.start_time} onChange={(e) => setForm({...form, start_time: e.target.value})} />
               </div>
             </div>
+            {selectedTreatment && (
+              <p className="text-xs text-text-muted mt-3">
+                預計結束時間：<b>{getEndTime()}</b>（療程時長 {selectedTreatment.duration_minutes} 分鐘）
+              </p>
+            )}
+          </Card>
+        </div>
 
-            <div className="space-y-4 border-l pl-6">
+        {/* 右欄 */}
+        <div className="space-y-4">
+          <Card className="p-2">
+            <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
+              <HomeIcon className="w-6 h-6 text-primary" /> 資源安排
+            </h3>
+            <div className="space-y-4">
               <div>
                 <Label>美容師</Label>
-                <Select value={formData.staff_id} onChange={(e) => setFormData({...formData, staff_id: e.target.value})}>
+                <Select value={form.staff_id} onChange={(e) => { setForm({...form, staff_id: e.target.value}); checkConflicts(); }}>
                   <option value="">選擇美容師</option>
                   {staff.map(s => {
-                    const label = getStaffScheduleLabel(s.id);
-                    const isOff = label.includes('休假');
-                    return (
-                      <option key={s.id} value={s.id} disabled={isOff}>
-                        {s.name}{label ? ' ' + label : ''}
-                      </option>
-                    );
+                    const hint = getScheduleHint(s.id);
+                    const off = hint.includes('休假');
+                    return <option key={s.id} value={s.id} disabled={off}>{s.name} {hint}</option>;
                   })}
                 </Select>
-                {conflicts.staff && <p className="text-xs text-danger mt-1">⚠️ 該美容師此時段已有預約</p>}
               </div>
               <div>
                 <Label>房間</Label>
-                <Select value={formData.room_id} onChange={(e) => setFormData({...formData, room_id: e.target.value})}>
+                <Select value={form.room_id} onChange={(e) => { setForm({...form, room_id: e.target.value}); checkConflicts(); }}>
                   <option value="">選擇房間</option>
                   {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </Select>
-                {conflicts.room && <p className="text-xs text-danger mt-1">⚠️ 該房間此時段已被佔用</p>}
               </div>
               <div>
                 <Label>儀器 (非必填)</Label>
-                <Select value={formData.equipment_id} onChange={(e) => setFormData({...formData, equipment_id: e.target.value})}>
-                  <option value="">選擇儀器</option>
-                  {equipment.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                <Select value={form.equipment_id} onChange={(e) => { setForm({...form, equipment_id: e.target.value}); checkConflicts(); }}>
+                  <option value="">不選儀器</option>
+                  {equipment.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </Select>
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="flex justify-between mt-8">
-            <Button variant="secondary" onClick={() => setStep(1)}>上一步</Button>
-            <Button disabled={!formData.staff_id || !formData.room_id || conflicts.staff || conflicts.room} onClick={() => setStep(3)}>
-              下一步 <ChevronRightIcon className="w-5 h-5 ml-2" />
-            </Button>
-          </div>
-        </Card>
-      )}
+          {/* 衝突提示 */}
+          {conflictMsg && (
+            <Alert color="warning" icon={ExclamationTriangleIcon}>
+              {conflictMsg}
+            </Alert>
+          )}
 
-      {step === 3 && (
-        <Card className="p-8 text-center space-y-6">
-          <div className="w-20 h-20 bg-green-100 text-success rounded-full flex items-center justify-center mx-auto">
-            <CheckCircleIcon className="w-12 h-12" />
-          </div>
-          <h3 className="text-2xl font-bold">確認預約詳情</h3>
-          <div className="bg-bg p-6 rounded-2xl text-left space-y-3">
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-text-muted">預約時間</span>
-              <span className="font-bold">{formData.appointment_date} {formData.start_time}</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-text-muted">客戶姓名</span>
-              <span className="font-bold">{clients.find(c => c.id === formData.client_id)?.name}</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-text-muted">療程項目</span>
-              <span className="font-bold">{treatments.find(t => t.id === formData.treatment_id)?.name}</span>
-            </div>
-            <div className="flex justify-between border-b pb-2">
-              <span className="text-text-muted">美容師</span>
-              <span className="font-bold">{staff.find(s => s.id === formData.staff_id)?.name}</span>
-            </div>
-          </div>
+          {/* 預覽摘要 */}
+          {(form.client_id || form.treatment_id) && (
+            <Card className="p-2 bg-bg">
+              <h3 className="font-bold mb-3 text-sm">預約摘要</h3>
+              <div className="space-y-2 text-sm">
+                {selectedClient && <p>👤 {selectedClient.name} · {selectedClient.phone}</p>}
+                {selectedTreatment && <p>💆 {selectedTreatment.name} (HK${selectedTreatment.single_price} · {selectedTreatment.duration_minutes}分)</p>}
+                {form.staff_id && <p>👩 {staff.find(s => s.id === form.staff_id)?.name}</p>}
+                {form.room_id && <p>🚪 {rooms.find(r => r.id === form.room_id)?.name}</p>}
+                <p>📅 {form.appointment_date} {form.start_time} - {getEndTime()}</p>
+              </div>
+            </Card>
+          )}
 
-          <div className="flex gap-4">
-            <Button variant="secondary" className="flex-1" onClick={() => setStep(2)}>返回修改</Button>
-            <Button variant="primary" className="flex-1" loading={loading} onClick={handleSubmit}>儲存並發送通知</Button>
-          </div>
-        </Card>
-      )}
+          {/* 送出按鈕 */}
+          <Button
+            variant="primary"
+            size="lg"
+            className="w-full"
+            disabled={!form.client_id || !form.treatment_id || !form.staff_id || !form.room_id}
+            loading={loading}
+            onClick={handleSubmit}
+          >
+            建立預約
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
