@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { Spinner } from 'flowbite-react';
 import AppLayout from '@/components/layout/AppLayout';
-import AdminGuard from '@/components/ui/AdminGuard';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
 import LoginPage from '@/pages/LoginPage';
 
@@ -62,12 +61,10 @@ const AppRoutes = () => {
           <Route path="clients" element={<ClientListPage />} />
           <Route path="clients/:id" element={<ClientDetailPage />} />
           <Route path="settlement" element={<RevenuePage />} />
-
-          {/* 店長權限路由 — 非店長會看到美觀提示頁 */}
-          <Route path="treatments" element={<AdminGuard><TreatmentManagePage /></AdminGuard>} />
-          <Route path="schedules" element={<AdminGuard><StaffSchedulePage /></AdminGuard>} />
-          <Route path="logs" element={<AdminGuard><ActivityLogPage /></AdminGuard>} />
-          <Route path="dormant" element={<AdminGuard><DormantClientsPage /></AdminGuard>} />
+          <Route path="treatments" element={<TreatmentManagePage />} />
+          <Route path="schedules" element={<StaffSchedulePage />} />
+          <Route path="logs" element={<ActivityLogPage />} />
+          <Route path="dormant" element={<DormantClientsPage />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

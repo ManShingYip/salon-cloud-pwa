@@ -166,9 +166,7 @@ const ClientDetailPage = () => {
           });
           setShowEdit(true);
         }}>編輯客戶資料</Button>
-        {isOwner && (
-          <Button variant="danger" onClick={() => setShowDelete(true)}>刪除客戶</Button>
-        )}
+        <Button variant="danger" onClick={() => setShowDelete(true)}>刪除客戶</Button>
       </header>
 
       <div className="flex gap-6 items-start">
@@ -224,11 +222,9 @@ const ClientDetailPage = () => {
                 <SparklesIcon className="w-6 h-6 text-primary" />
                 <h3 className="font-bold text-lg">已購療程庫存 (共 {services.length} 項)</h3>
               </div>
-              {isOwner && (
-                <Button variant="primary" size="md" icon={ShoppingCartIcon} onClick={openPurchase}>
-                  新增購買
-                </Button>
-              )}
+              <Button variant="primary" size="md" icon={ShoppingCartIcon} onClick={openPurchase}>
+                新增購買
+              </Button>
             </div>
             
             <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -243,17 +239,13 @@ const ClientDetailPage = () => {
                     <p className="text-[10px] text-text-muted">到期日：{svc.expiry_date || '不限期'}</p>
                   </div>
                     <div className="flex gap-2">
-                      {isOwner && (
-                        <>
-                          <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
-                          <Button variant="secondary" size="md" onClick={() => {
-                            setManualDeductTarget(svc);
-                            setManualDeductForm({ sessions: '1', payment_method: 'cash', reason: '' });
-                            setManualDeductError(null);
-                            setShowManualDeduct(true);
-                          }}>手動扣減</Button>
-                        </>
-                      )}
+                      <Button variant="secondary" size="md" onClick={() => openRefund(svc)}>退款</Button>
+                      <Button variant="secondary" size="md" onClick={() => {
+                        setManualDeductTarget(svc);
+                        setManualDeductForm({ sessions: '1', payment_method: 'cash', reason: '' });
+                        setManualDeductError(null);
+                        setShowManualDeduct(true);
+                      }}>手動扣減</Button>
                     </div>
                 </div>
               ))}

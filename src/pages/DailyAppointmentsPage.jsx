@@ -248,7 +248,7 @@ const DailyAppointmentsPage = () => {
 
                   <div className="flex flex-col items-end gap-2">
                     {/* 🔙 店長退回按鈕 (僅 attended 狀態 + 店長) */}
-                    {app.status === 'attended' && isOwner && (
+                    {app.status === 'attended' && (
                       <Button
                         variant="secondary"
                         size="md"

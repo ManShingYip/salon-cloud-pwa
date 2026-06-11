@@ -242,7 +242,7 @@ const DashboardPage = () => {
           <h3 className="font-bold flex items-center gap-2 mb-4">
             <UserGroupIcon className="w-5 h-5 text-primary" /> 員工表現 (本月 · 已完成預約)
           </h3>
-          {isOwner && d.staffSummary.length > 0 ? (
+          {d.staffSummary.length > 0 ? (
             <div className="space-y-3">
               {d.staffSummary.map(([name, count]) => (
                 <div key={name} className="flex justify-between items-center p-3 bg-bg rounded-xl">
@@ -252,9 +252,7 @@ const DashboardPage = () => {
               ))}
             </div>
           ) : (
-            <p className="text-center text-text-muted py-10">
-              {isOwner ? '暫無資料' : '僅店長可查看'}
-            </p>
+            <p className="text-center text-text-muted py-10">暫無資料</p>
           )}
         </Card>
       </div>
