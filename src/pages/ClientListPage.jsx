@@ -59,7 +59,7 @@ const ClientListPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col h-full space-y-4">
       <header className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-text">👥 客戶管理</h1>
