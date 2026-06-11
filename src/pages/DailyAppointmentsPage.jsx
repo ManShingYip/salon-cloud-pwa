@@ -18,12 +18,6 @@ import {
   ArrowUturnLeftIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
-import { supabase } from '@/config/supabase';
-import { useAuth } from '@/contexts/AuthContext';
-import { DayPicker } from 'react-day-picker';
-import 'react-day-picker/style.css';
-import { format, parseISO, startOfMonth, endOfMonth, addDays } from 'date-fns';
-import { zhHK } from 'date-fns/locale';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Tag from '@/components/ui/Tag';
