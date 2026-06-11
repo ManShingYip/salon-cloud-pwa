@@ -20,6 +20,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { supabase } from '@/config/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { DayPicker } from 'react-day-picker';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { zhHK } from 'date-fns/locale';
+import 'react-day-picker/dist/style.css';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
 import Tag from '@/components/ui/Tag';
@@ -32,6 +36,7 @@ const DailyAppointmentsPage = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [bookedDays, setBookedDays] = useState([]); // 有預約的日期
 
   // Deduction Modal State
   const [showDeduction, setShowDeduction] = useState(false);
@@ -48,6 +53,26 @@ const DailyAppointmentsPage = () => {
 
   useEffect(() => {
     fetchAppointments();
+  }, [selectedDate]);
+
+  // 載入本月所有預約日期（用於日曆熱力圖）
+  useEffect(() => {
+    const fetchMonthBookings = async () => {
+      const ref = selectedDate ? new Date(selectedDate) : new Date();
+      const first = format(startOfMonth(ref), 'yyyy-MM-dd');
+      const last = format(endOfMonth(ref), 'yyyy-MM-dd');
+      const { data } = await supabase
+        .from('appointments')
+        .select('appointment_date')
+        .gte('appointment_date', first)
+        .lte('appointment_date', last)
+        .neq('status', 'cancelled');
+      if (data) {
+        const days = [...new Set(data.map(r => r.appointment_date))];
+        setBookedDays(days);
+      }
+    };
+    fetchMonthBookings();
   }, [selectedDate]);
 
   const fetchAppointments = async () => {
@@ -141,13 +166,23 @@ const DailyAppointmentsPage = () => {
           <div className="bg-surface rounded-2xl p-5 shadow-card">
             <h3 className="font-bold mb-4 flex items-center gap-2">
               <CalendarIcon className="w-5 h-5 text-primary" />
-              日期選擇
+              預約日曆
             </h3>
-            <input
-              type="date"
-              className="w-full border-gray-200 rounded-xl focus:ring-primary focus:border-primary"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+            <DayPicker
+              mode="single"
+              selected={selectedDate ? parseISO(selectedDate) : new Date()}
+              onSelect={(day) => {
+                if (day) setSelectedDate(format(day, 'yyyy-MM-dd'));
+              }}
+              locale={zhHK}
+              modifiers={{ booked: bookedDays.map(d => parseISO(d)) }}
+              modifiersClassNames={{
+                booked: 'font-extrabold text-primary underline underline-offset-2',
+              }}
+              className="w-full flex justify-center"
+              styles={{
+                root: { width: '100%', maxWidth: '100%', margin: '0 auto' },
+              }}
             />
           </div>
 
