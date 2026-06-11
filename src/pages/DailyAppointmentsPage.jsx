@@ -189,17 +189,15 @@ const DailyAppointmentsPage = () => {
               onSelect={(day) => { if (day) setSelectedDate(format(day, 'yyyy-MM-dd')); }}
               locale={zhHK}
               modifiers={{ booked: bookedDays.map(d => parseISO(d)) }}
-              modifiersClassNames={{ booked: 'bg-primary-light/30 rounded-full' }}
+              modifiersClassNames={{ booked: '' }}
               components={{
                 DayContent: ({ date }) => {
                   const ds = format(date, 'yyyy-MM-dd');
                   const count = bookedCounts[ds] || 0;
                   return (
-                    <div className="flex flex-col items-center">
-                      <span className="text-sm">{date.getDate()}</span>
-                      {count > 0
-                        ? <span className="text-[10px] leading-none text-primary font-bold mt-0.5">{count} 預約</span>
-                        : <span className="text-[10px] leading-none text-text-muted mt-0.5">&nbsp;</span>}
+                    <div className="flex flex-col items-center leading-tight">
+                      <span className={`text-sm ${count > 0 ? 'font-extrabold text-primary' : ''}`}>{date.getDate()}</span>
+                      {count > 0 && <span className="text-[9px] text-primary font-semibold">{count}筆</span>}
                     </div>
                   );
                 },
