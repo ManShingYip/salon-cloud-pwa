@@ -16,7 +16,7 @@ import DashboardPage from '@/pages/DashboardPage';
 import DailyAppointmentsPage from '@/pages/DailyAppointmentsPage';
 import NewAppointmentPage from '@/pages/NewAppointmentPage';
 import EditAppointmentPage from '@/pages/EditAppointmentPage';
-import DailySettlementPage from '@/pages/DailySettlementPage';
+import RevenuePage from '@/pages/DailySettlementPage';
 import ClientListPage from '@/pages/ClientListPage';
 import ClientDetailPage from '@/pages/ClientDetailPage';
 import TreatmentManagePage from '@/pages/TreatmentManagePage';
@@ -61,7 +61,7 @@ const AppRoutes = () => {
           <Route path="appointments/:id/edit" element={<EditAppointmentPage />} />
           <Route path="clients" element={<ClientListPage />} />
           <Route path="clients/:id" element={<ClientDetailPage />} />
-          <Route path="settlement" element={<DailySettlementPage />} />
+          <Route path="settlement" element={<RevenuePage />} />
 
           {/* 店長權限路由 — 非店長會看到美觀提示頁 */}
           <Route path="treatments" element={<AdminGuard><TreatmentManagePage /></AdminGuard>} />
