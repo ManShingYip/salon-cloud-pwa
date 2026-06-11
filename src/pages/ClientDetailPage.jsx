@@ -126,17 +126,35 @@ const ClientDetailPage = () => {
       const sessionsToRestore = parseInt(refundForm.sessions) || 0;
       const refundAmount = parseFloat(refundForm.amount) || 0;
 
-      const { error } = await supabase.rpc('refund_deduction', {
+      // Step 1: 用 RPC 處理核心退款（回補次數 + 寫 refunds 表 + activity_log）
+      const { data: refundResult, error } = await supabase.rpc('refund_deduction', {
         p_client_service_id: refundTarget.id,
         p_sessions_to_restore: sessionsToRestore,
         p_refund_amount: refundAmount,
         p_reason: refundForm.reason.trim(),
-        p_refund_method: refundForm.refund_method,
       });
 
       if (error) {
         setRefundError(error.message);
       } else {
+        // Step 2: 補寫 refund_method（RPC 唔支援呢個參數，所以後補 UPDATE）
+        const userId = (await supabase.auth.getUser()).data.user?.id;
+        // 搵返最新一筆呢個 client_service 嘅 refund
+        const { data: latestRefund } = await supabase
+          .from('refunds')
+          .select('id')
+          .eq('client_service_id', refundTarget.id)
+          .eq('refunded_by', userId)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (latestRefund?.length) {
+          await supabase
+            .from('refunds')
+            .update({ refund_method: refundForm.refund_method })
+            .eq('id', latestRefund[0].id);
+        }
+
         setShowRefund(false);
         fetchData();
       }
