@@ -19,12 +19,24 @@ const ActivityLogPage = () => {
 
   const fetchLogs = async () => {
     setLoading(true);
-    let query = supabase.from('activity_log').select(`*, profiles(name)`).order('created_at', { ascending: false }).limit(50);
+    let query = supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(50);
     if (filter.type) query = query.eq('action_type', filter.type);
     if (filter.query) query = query.or(`action_type.ilike.%${filter.query}%,target_type.ilike.%${filter.query}%`);
 
     const { data } = await query;
-    setLogs(data || []);
+    const logsArr = data || [];
+
+    // Manual join: fetch staff names
+    const staffIds = [...new Set(logsArr.map(l => l.user_id).filter(Boolean))];
+    if (staffIds.length > 0) {
+      const { data: sf } = await supabase.from('profiles').select('id,name').in('id', staffIds);
+      if (sf) {
+        const sm = {}; sf.forEach(s => { sm[s.id] = s.name; });
+        logsArr.forEach(l => { l._staffName = sm[l.user_id] || '系統'; });
+      }
+    }
+
+    setLogs(logsArr);
     setLoading(false);
   };
 
@@ -172,7 +184,7 @@ const ActivityLogPage = () => {
                     <td className="px-6 py-4">
                       <Tag color={getActionColor(log.action_type)}>{getActionLabel(log.action_type)}</Tag>
                     </td>
-                    <td className="px-6 py-4 font-bold">{log.profiles?.name || '系統'}</td>
+                    <td className="px-6 py-4 font-bold">{log._staffName || log.profiles?.name || '系統'}</td>
                     <td className="px-6 py-4 text-sm text-text-muted font-mono whitespace-pre-wrap max-w-[400px] text-xs leading-relaxed">
                       {formatDetails(log.details)}
                     </td>

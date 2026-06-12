@@ -87,10 +87,19 @@ const DailyAppointmentsPage = () => {
     const lastDay = dates[dates.length - 1];
     const { data } = await supabase
       .from('appointments')
-      .select(`*, clients(name, phone, member_id, is_sensitive, sensitive_note), treatments(name), profiles!appointments_staff_id_fkey(name), rooms(name)`)
+      .select(`*, clients(name, phone, member_id, is_sensitive, sensitive_note), treatments(name), rooms(name)`)
       .gte('appointment_date', firstDay)
       .lte('appointment_date', lastDay)
       .order('start_time', { ascending: true });
+
+    // Manual join: fetch staff names
+    const staffIds = [...new Set(data?.map(a => a.staff_id).filter(Boolean) || [])];
+    let staffMap = {};
+    if (staffIds.length > 0) {
+      const { data: staffData } = await supabase.from('profiles').select('id,name').in('id', staffIds);
+      staffData?.forEach(s => { staffMap[s.id] = s.name; });
+    }
+    data?.forEach(a => { a._staffName = staffMap[a.staff_id] || '—'; });
 
     const map = {};
     data?.forEach(a => {
@@ -271,7 +280,7 @@ const DailyAppointmentsPage = () => {
                           </div>
                           {/* 員工 + 房間 */}
                           <div className="w-[140px] shrink-0 flex flex-col text-xs text-text-muted">
-                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{app.profiles?.name}</span>
+                            <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{app._staffName}</span>
                             <span className="flex items-center gap-1"><MapPinIcon className="w-3 h-3" />{app.rooms?.name}</span>
                           </div>
                           {/* 狀態 + 操作 */}

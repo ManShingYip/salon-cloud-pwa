@@ -60,12 +60,12 @@ const OrderManagePage = () => {
       supabase.from('client_services').select('*, clients(name), treatments(name)')
         .gte('purchase_date', filters.startDate)
         .lte('purchase_date', filters.endDate),
-      supabase.from('payment_transactions').select('*, profiles!settled_by(name)')
+      supabase.from('payment_transactions').select('*')
         .gte('transaction_date', filters.startDate)
         .lte('transaction_date', filters.endDate)
         .not('remarks', 'ilike', '%VOID%'),
       // 🔧 Fix: refunds FK 路徑 — refunded_by → staff, client_service_id → client_services
-      supabase.from('refunds').select('*, profiles!refunded_by(name), client_services(*, clients(name), treatments(name))')
+      supabase.from('refunds').select('*, client_services(*, clients(name), treatments(name))')
         .gte('refund_date', filters.startDate)
         .lte('refund_date', filters.endDate),
     ]);
@@ -74,6 +74,16 @@ const OrderManagePage = () => {
     const payments = ptRes.data || [];
     const refunds = rfRes.data || [];
 
+    // Manual join: staff names for settled_by + refunded_by
+    const allStaffIds = new Set();
+    payments.forEach(p => { if (p.settled_by) allStaffIds.add(p.settled_by); });
+    refunds.forEach(r => { if (r.refunded_by) allStaffIds.add(r.refunded_by); });
+    const staffMap = {};
+    if (allStaffIds.size > 0) {
+      const { data: sf } = await supabase.from('profiles').select('id,name').in('id', [...allStaffIds]);
+      sf?.forEach(s => { staffMap[s.id] = s.name; });
+    }
+
     // 整合訂單數據
     const formattedOrders = services.map(s => {
       const relatedPayments = payments.filter(p => p.client_id === s.client_id && p.treatment_id === s.treatment_id);
@@ -81,7 +91,7 @@ const OrderManagePage = () => {
       const lastPaymentDate = relatedPayments.length > 0
         ? [...relatedPayments].sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date))[0].transaction_date
         : '-';
-      const staffName = relatedPayments[0]?.profiles?.name || '—';
+      const staffName = staffMap[relatedPayments[0]?.settled_by] || '—';
 
       return {
         ...s,
@@ -102,7 +112,7 @@ const OrderManagePage = () => {
       amount: -(parseFloat(r.refund_amount) || 0),
       reason: r.reason || '',
       refund_date: r.refund_date,
-      staff_name: r.profiles?.name || '—',
+      staff_name: staffMap[r.refunded_by] || '—',
       status: 'refunded'
     }));
 

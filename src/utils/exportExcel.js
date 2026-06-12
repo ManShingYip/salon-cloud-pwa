@@ -45,14 +45,23 @@ export const exportClients = async (supabase) => {
 export const exportSales = async (supabase) => {
   const { data } = await supabase
     .from('payment_transactions')
-    .select('*, clients(name), treatments(name), profiles!payment_transactions_staff_id_fkey(name)')
+    .select('*, clients(name), treatments(name)')
     .order('transaction_date', { ascending: false })
     .limit(500);
+
+  // Manual join: staff names
+  const staffIds = [...new Set(data?.map(tx => tx.staff_id).filter(Boolean) || [])];
+  let staffMap = {};
+  if (staffIds.length > 0) {
+    const { data: sf } = await supabase.from('profiles').select('id,name').in('id', staffIds);
+    sf?.forEach(s => { staffMap[s.id] = s.name; });
+  }
+
   const rows = (data || []).map(tx => ({
     '日期': tx.transaction_date,
     '客戶': tx.clients?.name || '',
     '療程': tx.treatments?.name || '',
-    '美容師': tx.profiles?.name || '',
+    '美容師': staffMap[tx.staff_id] || '',
     '金額': tx.amount,
     '支付方式': tx.payment_method === 'cash' ? '現金' : tx.payment_method === 'card' ? '信用卡' : tx.payment_method === 'transfer' ? '轉賬' : tx.payment_method === 'other' ? '其他' : tx.payment_method,
     '備註': tx.remarks || '',

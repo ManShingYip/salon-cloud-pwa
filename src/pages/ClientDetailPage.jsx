@@ -76,7 +76,7 @@ const ClientDetailPage = () => {
       ] = await Promise.all([
         supabase.from('clients').select('*').eq('id', id).maybeSingle(),
         supabase.from('client_services').select('*, treatments(name)').eq('client_id', id),
-        supabase.from('appointments').select('*, treatments(name), profiles(name)').eq('client_id', id).order('appointment_date', { ascending: false }),
+        supabase.from('appointments').select('*, treatments(name)').eq('client_id', id).order('appointment_date', { ascending: false }),
       ]);
 
       if (!clientData) {
@@ -85,7 +85,19 @@ const ClientDetailPage = () => {
         setClient(clientData);
       }
       setServices(svcData || []);
-      setHistory(histData || []);
+      const histArr = histData || [];
+      setHistory(histArr);
+
+      // Manual join: fetch staff names for appointments
+      const staffIds = [...new Set(histArr.map(h => h.staff_id).filter(Boolean))];
+      if (staffIds.length > 0) {
+        const { data: sf } = await supabase.from('profiles').select('id,name').in('id', staffIds);
+        if (sf) {
+          const sm = {}; sf.forEach(s => { sm[s.id] = s.name; });
+          histArr.forEach(h => { h._staffName = sm[h.staff_id] || '—'; });
+          setHistory([...histArr]); // trigger re-render
+        }
+      }
     } catch (err) {
       console.warn('fetchData error:', err.message);
       setError('載入客戶資料時發生錯誤: ' + err.message);
@@ -381,7 +393,7 @@ const ClientDetailPage = () => {
                       <tr key={item.id}>
                         <td className="px-6 py-4 font-bold">{item.appointment_date}</td>
                         <td className="px-6 py-4">{item.treatments?.name || '-'}</td>
-                        <td className="px-6 py-4">{item.profiles?.name || '-'}</td>
+                        <td className="px-6 py-4">{item._staffName || item.profiles?.name || '-'}</td>
                         <td className="px-6 py-4">
                           <Tag color={item.status === 'attended' ? 'green' : item.status === 'cancelled' ? 'gray' : 'amber'}>
                             {item.status === 'attended' ? '已出席' : item.status === 'cancelled' ? '已取消' : '未出席'}
