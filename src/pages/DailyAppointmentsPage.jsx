@@ -87,12 +87,12 @@ const DailyAppointmentsPage = () => {
     const lastDay = dates[dates.length - 1];
     const { data } = await supabase
       .from('appointments')
-      .select(`*, clients(name, phone, member_id, is_sensitive, sensitive_note), treatments(name), rooms(name)`)
+      .select(`*, clients(name, phone, member_id, is_sensitive, sensitive_note), treatments(name)`)
       .gte('appointment_date', firstDay)
       .lte('appointment_date', lastDay)
       .order('start_time', { ascending: true });
 
-    // Manual join: fetch staff names
+    // Manual joins: staff & rooms
     const staffIds = [...new Set(data?.map(a => a.staff_id).filter(Boolean) || [])];
     let staffMap = {};
     if (staffIds.length > 0) {
@@ -100,6 +100,14 @@ const DailyAppointmentsPage = () => {
       staffData?.forEach(s => { staffMap[s.id] = s.name; });
     }
     data?.forEach(a => { a._staffName = staffMap[a.staff_id] || '—'; });
+    // rooms — also FK issue
+    const roomIds = [...new Set(data?.map(a => a.room_id).filter(Boolean) || [])];
+    let roomMap = {};
+    if (roomIds.length > 0) {
+      const { data: roomData } = await supabase.from('rooms').select('id,name').in('id', roomIds);
+      roomData?.forEach(r => { roomMap[r.id] = r.name; });
+    }
+    data?.forEach(a => { a._roomName = roomMap[a.room_id] || a.room_id || a.room_name || '—'; });
 
     const map = {};
     data?.forEach(a => {
@@ -281,7 +289,7 @@ const DailyAppointmentsPage = () => {
                           {/* 員工 + 房間 */}
                           <div className="w-[140px] shrink-0 flex flex-col text-xs text-text-muted">
                             <span className="flex items-center gap-1"><UserIcon className="w-3 h-3" />{app._staffName}</span>
-                            <span className="flex items-center gap-1"><MapPinIcon className="w-3 h-3" />{app.rooms?.name}</span>
+                            <span className="flex items-center gap-1"><MapPinIcon className="w-3 h-3" />{app._roomName}</span>
                           </div>
                           {/* 狀態 + 操作 */}
                           <div className="flex items-center gap-2 shrink-0">
